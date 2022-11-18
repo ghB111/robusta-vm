@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Types ( Value(..), Type(..) )
+module Types ( Value(..), Type(..), vType, wrap )
 where
 
 data Value 
@@ -30,7 +30,3 @@ instance VmValue ([] Char) where
 
 instance VmValue () where
     wrap x = VoidV x
-
--- -- class VmTypeConvertible a
--- --     toVmType :: a -> Type
-

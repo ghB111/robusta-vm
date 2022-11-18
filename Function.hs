@@ -1,22 +1,23 @@
-module Function ( Function(..) )
-where
-
-import Control.Monad.State.Lazy
+module Function
+    ( Function(..)
+    , Frame(..)
+    ) where
 
 import Types ( Value(..), Type(..) )
+import Instruction
 
-data FunctionState
-    = FunctionState { variables :: [Value] }
+type Stack = [Value]
 type Variables = [Value]
 
-performInstruction :: State FunctionState FunctionState
-performInstruction
+{-
+    Arguements to function are passed as variables
+-}
+data Frame = Frame
+    { variables :: [Value]
+    , pc :: Int
+    , stack :: Stack
+    } deriving (Show, Read)
 
--- instance Functor FunctionState where
---     fmap = undefined
-
-data Instruction = Instruction
-    deriving (Show, Read)
 
 data Function = Function { name :: String
                          , argTypes :: [Type]
@@ -25,5 +26,3 @@ data Function = Function { name :: String
                          } deriving (Show, Read)
 
 exFunction = Function "examples.ex" [IntT] VoidT []
-
-

@@ -1,18 +1,18 @@
 module Vm
 where
-import Function (Function(..))
+import Function ( Function(..), Frame(..) )
+import Types ( Value(..) )
 
 -- data Struct = Struct deriving (Show, Read)
 
-type Stack = []
+{-
+   Vm has one common stack that is shared between
+   function calls. I.e. if `foo` calls `bar`, `bar`
+   can access `foo`s stack. This is not done on purpose
+-}
 
-data VM = { stack :: Stack
-          , functions :: [Function] 
-          } -- pc, other stuff
+data Vm = Vm
+   { frames :: [Frame]
+   , functions :: [Function] 
+   } deriving (Show, Read)
 
-
--- by default everything is public
-data ProgramUnit = ProgramUnit { functions :: [Function]
-                            --    , structs :: [Struct]
-                               }
-                               deriving (Show, Read)
