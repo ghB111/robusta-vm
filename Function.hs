@@ -1,6 +1,7 @@
 module Function
     ( Function(..)
     , Frame(..)
+    , Stack
     ) where
 
 import Types ( Value(..), Type(..) )
