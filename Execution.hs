@@ -162,7 +162,7 @@ performSpecialInstruction IReturn = do
     let currentFrame = head frames
     let currentStack = stack currentFrame
     let valueToReturn = head currentStack
-    let prevFrame@{prevStack} = frames !! 1
+    let prevFrame@Frame{stack=prevStack} = frames !! 1
     let prevFramePatched = prevFrame { stack = valueToReturn : prevStack }
     let newFrames = prevFramePatched : drop 2 frames
     put vm { frames = newFrames }
