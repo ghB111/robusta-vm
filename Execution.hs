@@ -171,3 +171,22 @@ performSpecialInstruction Return = do
     vm@Vm{frames} <- get
     let newFrames = tail frames
     put vm { frames = newFrames }
+
+incPc :: State Vm ()
+incPc = do
+    vm@Vm{frames} <- get
+    let currentFrame@Frame{pc} = head frames
+    let newFrame = currentFrame { pc = succ pc }
+    put vm { frames = newFrame : tail frames }
+
+performInstruction :: Instruction -> State Vm ()
+performInstruction (FrameInstructionC instruction) = do
+    incPc
+    vm@Vm{frames} <- get
+    let currentFrame@Frame{pc} = head frames
+    let (_, newFrame) = runState (performFrameInstruction instruction) currentFrame
+    put vm { frames = newFrame : tail frames }
+
+performInstruction (SpecialInstructionC instruction) = do
+    incPc
+    performSpecialInstruction instruction
