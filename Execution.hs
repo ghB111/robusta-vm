@@ -46,70 +46,70 @@ performBranch gotoDest orderings = do
 
 {-
     Performs one frame instruction. 
-    Can change state of frame (ex. pc and variables)
+    Can change state of frame (ex. pc, variables)
 -}
-performInstruction :: FrameInstruction -> State Frame ()
-performInstruction Nop  = return ()
-performInstruction (Goto to) = do
+performFrameInstruction :: FrameInstruction -> State Frame ()
+performFrameInstruction Nop  = return ()
+performFrameInstruction (Goto to) = do
     frame <- get
     put (frame {pc = to})
 
-performInstruction IAdd = do
+performFrameInstruction IAdd = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x1 + x2
     put $ frame { stack = (wrap r):xs }
 
-performInstruction IMul = do
+performFrameInstruction IMul = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x1 * x2
     put $ frame { stack = (wrap r):xs }
 
-performInstruction ISub = do
+performFrameInstruction ISub = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x2 - x1
     put $ frame { stack = (wrap r):xs }
 
-performInstruction INeg = do
+performFrameInstruction INeg = do
     frame <- get
     let ((IntV x):xs) = stack frame
     put $ frame { stack = wrap (-x):xs }
 
-performInstruction IConst0 = do
+performFrameInstruction IConst0 = do
     frame@Frame{stack} <- get
     put $ frame { stack = wrap (0 :: Int) : stack }
 
-performInstruction IConst1 = do
+performFrameInstruction IConst1 = do
     frame@Frame{stack} <- get
     put $ frame { stack = wrap (1 :: Int) : stack }
 
-performInstruction IDiv = do
+performFrameInstruction IDiv = do
     frame@Frame{stack} <- get
     let ( (IntV x1) : (IntV x2) : xs ) = stack
     let r = x2 `mod` x1
     put $ frame { stack = wrap r : xs }
 
-performInstruction (IfICmpEq gotoDest) = performIntegerComparisonBranch gotoDest [EQ]
-performInstruction (IfICmpGe gotoDest) = performIntegerComparisonBranch gotoDest [GT, EQ]
-performInstruction (IfICmpGt gotoDest) = performIntegerComparisonBranch gotoDest [GT]
-performInstruction (IfICmpLe gotoDest) = performIntegerComparisonBranch gotoDest [LT, EQ]
-performInstruction (IfICmpLt gotoDest) = performIntegerComparisonBranch gotoDest [LT]
-performInstruction (IfICmpNe gotoDest) = performIntegerComparisonBranch gotoDest [LT, GT]
+performFrameInstruction (IfICmpEq gotoDest) = performIntegerComparisonBranch gotoDest [EQ]
+performFrameInstruction (IfICmpGe gotoDest) = performIntegerComparisonBranch gotoDest [GT, EQ]
+performFrameInstruction (IfICmpGt gotoDest) = performIntegerComparisonBranch gotoDest [GT]
+performFrameInstruction (IfICmpLe gotoDest) = performIntegerComparisonBranch gotoDest [LT, EQ]
+performFrameInstruction (IfICmpLt gotoDest) = performIntegerComparisonBranch gotoDest [LT]
+performFrameInstruction (IfICmpNe gotoDest) = performIntegerComparisonBranch gotoDest [LT, GT]
 
-performInstruction (IfEq gotoDest) = performBranch gotoDest [EQ]
-performInstruction (IfGt gotoDest) = performBranch gotoDest [GT]
-performInstruction (IfLe gotoDest) = performBranch gotoDest [LT, EQ]
-performInstruction (IfLt gotoDest) = performBranch gotoDest [LT]
-performInstruction (IfNe gotoDest) = performBranch gotoDest [LT, GT]
+performFrameInstruction (IfEq gotoDest) = performBranch gotoDest [EQ]
+performFrameInstruction (IfGt gotoDest) = performBranch gotoDest [GT]
+performFrameInstruction (IfLe gotoDest) = performBranch gotoDest [LT, EQ]
+performFrameInstruction (IfLt gotoDest) = performBranch gotoDest [LT]
+performFrameInstruction (IfNe gotoDest) = performBranch gotoDest [LT, GT]
 
-performInstruction (ILoad idx) = do
+performFrameInstruction (ILoad idx) = do
     frame@Frame{stack, variables} <- get
     let x = getIntV $ variables !! idx
     put frame { stack = wrap x : stack }
 
-performInstruction (IStore idx) = do
+performFrameInstruction (IStore idx) = do
     -- This is a funny one, because unlike JVM, we do not have
     -- information about amount of variables a method needs. So we basically
     -- have to lazily allocate space for new variables
@@ -124,19 +124,19 @@ performInstruction (IStore idx) = do
             where allocateN = succ idx - (length vars)
           makeSureFits _ vars = vars
 
-performInstruction (Ldc value) = do
+performFrameInstruction (Ldc value) = do
     frame@Frame{stack} <- get
     put frame { stack = value : stack }
 
-performInstruction Dup = do
+performFrameInstruction Dup = do
     frame@Frame{stack} <- get
     put frame { stack = head stack : stack }
 
-performInstruction Pop = do
+performFrameInstruction Pop = do
     frame@Frame{stack} <- get
     put frame { stack = tail stack }
 
-performInstruction Swap = do
+performFrameInstruction Swap = do
     frame@Frame{stack} <- get
     let [x1, x2] = copyNFromStack 2 stack
     put frame { stack = x1 : x2 : drop 2 stack }
