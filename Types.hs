@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Types ( Value(..), Type(..), vType, wrap )
+module Types ( Value(..), Type(..), vType, wrap, makeDefault )
 where
 
 data Value 
@@ -18,6 +18,12 @@ vType :: Value -> Type
 vType (VoidV _) = VoidT
 vType (IntV _) = IntT
 vType (StringV _) = StringT
+
+-- here is our billion dollar mistake
+makeDefault :: Type -> Value
+makeDefault VoidT   = VoidV ()
+makeDefault IntT    = wrap (0 :: Int)
+makeDefault StringT = wrap ""
 
 class VmValue a where
     wrap :: a -> Value

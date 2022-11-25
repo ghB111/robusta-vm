@@ -17,6 +17,7 @@ data Frame = Frame
     { variables :: [Value]
     , pc :: Int
     , stack :: Stack
+    , function :: Function
     } deriving (Show, Read)
 
 

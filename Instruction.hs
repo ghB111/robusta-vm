@@ -1,9 +1,22 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Instruction ( Instruction(..) )
+module Instruction ( Instruction(..), SpecialInstruction(..), FrameInstruction(..) )
 where
 
+import Types ( Value(..) )
+
 data Instruction
+    = SpecialInstructionC SpecialInstruction
+    | FrameInstructionC FrameInstruction
+    deriving (Show, Read)
+
+data SpecialInstruction
+    = IReturn
+    | Return
+    | InvokeF  { functionName :: String }
+    deriving (Show, Read)
+
+data FrameInstruction
     = Nop
     | IAdd
     | ISub
@@ -26,10 +39,7 @@ data Instruction
     | IfNe     { gotoDest :: Int }
     | ILoad    { idx :: Int }
     | IStore   { idx :: Int }
-    | InvokeF  { functionName :: String }
-    | IReturn
-    | Return
-    | Ldc
+    | Ldc { value :: Value }
     | Dup
     | Pop
     | Swap
