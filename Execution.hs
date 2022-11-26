@@ -88,7 +88,7 @@ performFrameInstruction IConst1 = do
 performFrameInstruction IDiv = do
     frame@Frame{stack} <- get
     let ( (IntV x1) : (IntV x2) : xs ) = stack
-    let r = x2 `mod` x1
+    let r = x2 `div` x1
     put $ frame { stack = wrap r : xs }
 
 performFrameInstruction (IfICmpEq gotoDest) = performIntegerComparisonBranch gotoDest [EQ]
