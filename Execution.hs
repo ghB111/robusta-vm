@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Execution ( )
+module Execution ( runVm )
 where
 
 import Control.Monad.State.Lazy
@@ -190,3 +190,21 @@ performInstruction (FrameInstructionC instruction) = do
 performInstruction (SpecialInstructionC instruction) = do
     incPc
     performSpecialInstruction instruction
+
+vmStep :: Vm -> Vm
+vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm
+    where (_, nextVm) = runState (performInstruction nextInstruction) vm
+          nextInstruction = instructions !! pc
+
+{-
+    Runs vm until it has returned to its original frame, which
+    is supposed to have return code on top as return value
+-}
+runVm :: Vm -> Int
+runVm coldVm = ( runTilOneFrame . runToMain) coldVm
+    where runToMain :: Vm -> Vm -- it is supposed that main is second frame
+          runToMain vm@Vm{frames} | length frames == 2 = vm
+          runToMain vm                                 = (runToMain . vmStep) vm
+          runTilOneFrame vm@Vm{frames = [resFrame]}    = returnCode
+            where (IntV returnCode) = (head . stack) resFrame
+          runTilOneFrame vm                            = (runTilOneFrame . vmStep) vm
