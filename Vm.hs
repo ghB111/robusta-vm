@@ -7,5 +7,5 @@ import Types ( Value(..) )
 
 data Vm = Vm
    { frames :: [Frame]
-   , functions :: [Function] 
+   , functions :: [Function] -- visible functions
    } deriving (Show, Read)

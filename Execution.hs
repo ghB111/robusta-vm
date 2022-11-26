@@ -11,6 +11,8 @@ import Vm ( Vm (..) )
 import Instruction (  Instruction(..), FrameInstruction(..), SpecialInstruction(..) )
 import Function ( Frame(..), Stack, Function(..) )
 
+import Debug.Trace
+
 -- https://www.reddit.com/r/haskell/comments/8jui5k/how_to_replace_an_element_at_an_index_in_a_list/
 replace :: [a] -> Int -> a -> [a]
 replace xs i e = case splitAt i xs of
@@ -192,9 +194,9 @@ performInstruction (SpecialInstructionC instruction) = do
     performSpecialInstruction instruction
 
 vmStep :: Vm -> Vm
-vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm
+vmStep vm@Vm{frames = curFrame@Frame{pc=framePc, function = Function{instructions}} : _} = traceShow (pc $ head $ frames nextVm) nextVm
     where (_, nextVm) = runState (performInstruction nextInstruction) vm
-          nextInstruction = instructions !! pc
+          nextInstruction = instructions !! framePc
 
 {-
     Runs vm until it has returned to its original frame, which
