@@ -11,8 +11,6 @@ import Vm ( Vm (..) )
 import Instruction (  Instruction(..), FrameInstruction(..), SpecialInstruction(..) )
 import Function ( Frame(..), Stack, Function(..) )
 
-import Debug.Trace
-
 -- https://www.reddit.com/r/haskell/comments/8jui5k/how_to_replace_an_element_at_an_index_in_a_list/
 replace :: [a] -> Int -> a -> [a]
 replace xs i e = case splitAt i xs of
@@ -119,7 +117,7 @@ performFrameInstruction (IStore idx) = do
     frame@Frame{stack, variables} <- get
     let [x] = map getIntV $ copyNFromStack 1 stack
     let trustedVariables = makeSureFits idx variables
-    put frame { stack = drop 1 stack, variables = replace variables idx $ wrap x }
+    put frame { stack = drop 1 stack, variables = replace trustedVariables idx $ wrap x }
     where makeSureFits :: Int -> [Value] -> [Value]
           makeSureFits idx vars
             | allocateN > 0   = vars ++ (take allocateN $ repeat (VoidV ()))
@@ -194,9 +192,9 @@ performInstruction (SpecialInstructionC instruction) = do
     performSpecialInstruction instruction
 
 vmStep :: Vm -> Vm
-vmStep vm@Vm{frames = curFrame@Frame{pc=framePc, function = Function{instructions}} : _} = traceShow (pc $ head $ frames nextVm) nextVm
+vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm
     where (_, nextVm) = runState (performInstruction nextInstruction) vm
-          nextInstruction = instructions !! framePc
+          nextInstruction = instructions !! pc
 
 {-
     Runs vm until it has returned to its original frame, which
