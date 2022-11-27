@@ -16,7 +16,7 @@ ithFibFunction = Function { name = "util/fib"
                           , instructions = instructions }
     where instructions = [ FrameInstructionC $ ILoad 0 -- load arg on stack
                          , FrameInstructionC $ Dup
-                         , FrameInstructionC $ Ldc $ wrap (0 :: Int) -- base case 1
+                         , FrameInstructionC $ Ldc $ wrap (0 :: Int) -- base case 0
                          , FrameInstructionC $ IfICmpNe 5
                          , SpecialInstructionC $ IReturn -- return 0, 0th fib
                          , FrameInstructionC $ Dup
