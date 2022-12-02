@@ -144,17 +144,23 @@ performFrameInstruction Swap = do
 performSpecialInstruction :: SpecialInstruction -> State Vm ()
 performSpecialInstruction (InvokeF functionName) = do
     vm@Vm{frames, functions} <- get
-    let func@Function{argTypes, returnType, instructions}
-          = head $ filter (\x -> name x == functionName) functions
-    -- todo check arg types?
-    let argN = length argTypes
     let currentFrame = head frames
-    let args = copyNFromStack argN (stack currentFrame)
-    let currentStack = stack currentFrame
-    let currentFrameFixed = currentFrame { stack = drop argN currentStack }
-    let newFrame = Frame { variables = args , pc = 0, stack = [], function = func }
-    let newFrames = newFrame : currentFrameFixed : tail frames
-    put vm { frames = newFrames }
+    let func = head $ filter (\x -> name x == functionName) functions
+    case func of
+        NativeFunction{realFunc}                          -> do
+            let (_, newFrame) = runState realFunc currentFrame
+            let newFrames = newFrame : tail frames
+            put vm { frames = newFrames }
+        func@Function{argTypes, returnType, instructions} -> makeFrame
+            where makeFrame = do
+                    -- todo check arg types?
+                    let argN = length argTypes
+                    let args = copyNFromStack argN (stack currentFrame)
+                    let currentStack = stack currentFrame
+                    let currentFrameFixed = currentFrame { stack = drop argN currentStack }
+                    let newFrame = Frame { variables = args , pc = 0, stack = [], function = func }
+                    let newFrames = newFrame : currentFrameFixed : tail frames
+                    put vm { frames = newFrames }
     
 -- To be fair, this wouldn't be any different for an AReturn or LReturn
 performSpecialInstruction IReturn = do

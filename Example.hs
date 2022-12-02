@@ -49,8 +49,19 @@ mainFuncExample i = Function { name = "main"
 fibVm :: Int -> Vm
 fibVm i = baseVm { functions = [mainFuncExample i, ithFibFunction] }
 
+nativeVm = baseVm { functions = [exNativeFunction, main] }
+    where main :: Function
+          main = Function { name = "main"
+                          , argTypes = []
+                          , returnType = IntT
+                          , instructions = mainInstructions }
+          mainInstructions :: [Instruction]
+          mainInstructions = [ invokeF "examples.exNative"
+                             , ldc $ wrap (0 :: Int)
+                             , iRet ]
+
 -- will print i-th fib number, calculating it from the vm
 main = do
-    putStrLn "Print index of a fib number to calculate"
-    i <- readLn :: IO Int
-    print $ runVm $ fibVm i
+    -- putStrLn "Print index of a fib number to calculate"
+    -- i <- readLn :: IO Int
+    print $ runVm $ nativeVm
