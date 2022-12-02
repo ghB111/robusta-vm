@@ -19,11 +19,11 @@ ithFibFunction = Function { name = "util/fib"
                          , dup
                          , ldc $ wrap (0 :: Int) -- base case 0
                          , ifICmpNe 5
-                         , iReturn -- return 0, 0th fib
+                         , iRet -- return 0, 0th fib
                          , dup
                          , ldc $ wrap (1 :: Int) -- base case 1
                          , ifICmpNe 9
-                         , iReturn -- return 1, 1th fib
+                         , iRet -- return 1, 1th fib
                          , dup
                          , iConst1
                          , iSub
@@ -34,7 +34,7 @@ ithFibFunction = Function { name = "util/fib"
                          , invokeF "util/fib" -- get i-2
                          , iLoad 1
                          , iAdd
-                         , iReturn ]
+                         , iRet ]
 
 -- calculates i-th fib number
 mainFuncExample :: Int -> Function
@@ -44,7 +44,7 @@ mainFuncExample i = Function { name = "main"
                              , instructions = instructions i }
     where instructions i = [ ldc $ wrap i
                            , invokeF "util/fib"
-                           , iReturn ]
+                           , iRet ]
 
 fibVm :: Int -> Vm
 fibVm i = baseVm { functions = [mainFuncExample i, ithFibFunction] }

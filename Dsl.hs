@@ -1,4 +1,4 @@
-module Dsl ( iReturn
+module Dsl ( iRet
            , ret
            , invokeF
            , dup     
@@ -24,11 +24,10 @@ import Function
 import Types
 import Instruction
 import Execution
-import Robusta
 
 
 
-iReturn = SpecialInstructionC $ IReturn
+iRet    = SpecialInstructionC $ IReturn
 ret     = SpecialInstructionC $ Return
 invokeF = SpecialInstructionC . InvokeF
 
