@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Function
     ( Function(..)
     , Frame(..)
@@ -7,7 +9,7 @@ module Function
     ) where
 
 import Control.Monad.State.Lazy
-import System.IO.Unsafe
+import Debug.Trace
 
 import Types ( Value(..), Type(..) )
 import Instruction
@@ -37,8 +39,8 @@ data Function = Function { name :: String
               
 -- todo
 instance Show Function where
-    show Function{} = "function"
-    show NativeFunction{} = "native function"
+    show Function{name} = "function " ++ name
+    show NativeFunction{name} = "native function " ++ name
 
 -- todo
 instance Read Function where
@@ -47,5 +49,4 @@ instance Read Function where
 exFunction = Function "examples.ex" [IntT] VoidT []
 exNativeFunction = NativeFunction "examples.nativeEx" $ do
     state <- get
-    let _ = unsafePerformIO $ print state
-    put state
+    traceShow state $ put state

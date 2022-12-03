@@ -11,6 +11,8 @@ import Vm ( Vm (..) )
 import Instruction (  Instruction(..), FrameInstruction(..), SpecialInstruction(..) )
 import Function ( Frame(..), Stack, Function(..) )
 
+import Debug.Trace
+
 -- https://www.reddit.com/r/haskell/comments/8jui5k/how_to_replace_an_element_at_an_index_in_a_list/
 replace :: [a] -> Int -> a -> [a]
 replace xs i e = case splitAt i xs of
@@ -145,22 +147,24 @@ performSpecialInstruction :: SpecialInstruction -> State Vm ()
 performSpecialInstruction (InvokeF functionName) = do
     vm@Vm{frames, functions} <- get
     let currentFrame = head frames
-    let func = head $ filter (\x -> name x == functionName) functions
-    case func of
-        NativeFunction{realFunc}                          -> do
-            let (_, newFrame) = runState realFunc currentFrame
-            let newFrames = newFrame : tail frames
-            put vm { frames = newFrames }
-        func@Function{argTypes, returnType, instructions} -> makeFrame
-            where makeFrame = do
-                    -- todo check arg types?
-                    let argN = length argTypes
-                    let args = copyNFromStack argN (stack currentFrame)
-                    let currentStack = stack currentFrame
-                    let currentFrameFixed = currentFrame { stack = drop argN currentStack }
-                    let newFrame = Frame { variables = args , pc = 0, stack = [], function = func }
-                    let newFrames = newFrame : currentFrameFixed : tail frames
-                    put vm { frames = newFrames }
+    let matchedFuncs = filter (\x -> name x == functionName) functions
+    if null matchedFuncs then error $ "function name " ++ functionName ++ " not found" else do
+      let func = head matchedFuncs
+      case func of
+          NativeFunction{realFunc}                          -> do
+              let (_, newFrame) = runState realFunc currentFrame
+              let newFrames = newFrame : tail frames
+              trace "Invoked native" $ put vm { frames = newFrames }
+          func@Function{argTypes, returnType, instructions} -> trace "Invoked non-native" makeFrame
+              where makeFrame = do
+                      -- todo check arg types?
+                      let argN = length argTypes
+                      let args = copyNFromStack argN (stack currentFrame)
+                      let currentStack = stack currentFrame
+                      let currentFrameFixed = currentFrame { stack = drop argN currentStack }
+                      let newFrame = Frame { variables = args , pc = 0, stack = [], function = func }
+                      let newFrames = newFrame : currentFrameFixed : tail frames
+                      put vm { frames = newFrames }
     
 -- To be fair, this wouldn't be any different for an AReturn or LReturn
 performSpecialInstruction IReturn = do
@@ -197,8 +201,10 @@ performInstruction (SpecialInstructionC instruction) = do
     incPc
     performSpecialInstruction instruction
 
+-- this only takes non-native function in consideration, because putting native
+-- functions in frame does not make sense
 vmStep :: Vm -> Vm
-vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm
+vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm -- trace(show nextVm ++ "\n") nextVm
     where (_, nextVm) = runState (performInstruction nextInstruction) vm
           nextInstruction = instructions !! pc
 
@@ -207,7 +213,7 @@ vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _}
     is supposed to have return code on top as return value
 -}
 runVm :: Vm -> Int
-runVm coldVm = ( runTilOneFrame . runToMain) coldVm
+runVm coldVm = (runTilOneFrame . runToMain) coldVm
     where runToMain :: Vm -> Vm -- it is supposed that main is second frame
           runToMain vm@Vm{frames} | length frames == 2 = vm
           runToMain vm                                 = (runToMain . vmStep) vm

@@ -56,7 +56,7 @@ nativeVm = baseVm { functions = [exNativeFunction, main] }
                           , returnType = IntT
                           , instructions = mainInstructions }
           mainInstructions :: [Instruction]
-          mainInstructions = [ invokeF "examples.exNative"
+          mainInstructions = [ invokeF "examples.nativeEx"
                              , ldc $ wrap (0 :: Int)
                              , iRet ]
 
