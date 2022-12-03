@@ -8,11 +8,9 @@ module Function
     , exNativeFunction
     ) where
 
-import Control.Monad.State.Lazy
-import Debug.Trace
-
 import Types ( Value(..), Type(..) )
 import Instruction
+import Control.Monad.State
 
 type Stack = [Value]
 
@@ -27,7 +25,7 @@ data Frame = Frame
     } deriving (Show, Read)
 
 
-type NativeFunctionT = State Frame ()
+type NativeFunctionT = StateT Frame IO ()
 data Function = Function { name :: String
                          , argTypes :: [Type]
                          , returnType :: Type
@@ -49,4 +47,5 @@ instance Read Function where
 exFunction = Function "examples.ex" [IntT] VoidT []
 exNativeFunction = NativeFunction "examples.nativeEx" $ do
     state <- get
-    traceShow state $ put state
+    liftIO $ putStrLn "We now have side-effects"
+    put state

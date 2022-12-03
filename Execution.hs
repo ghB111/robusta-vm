@@ -3,15 +3,13 @@
 module Execution ( runVm )
 where
 
-import Control.Monad.State.Lazy
+import Control.Monad.State
 import Data.List
 
 import Types
 import Vm ( Vm (..) )
 import Instruction (  Instruction(..), FrameInstruction(..), SpecialInstruction(..) )
 import Function ( Frame(..), Stack, Function(..) )
-
-import Debug.Trace
 
 -- https://www.reddit.com/r/haskell/comments/8jui5k/how_to_replace_an_element_at_an_index_in_a_list/
 replace :: [a] -> Int -> a -> [a]
@@ -143,7 +141,7 @@ performFrameInstruction Swap = do
     let [x1, x2] = copyNFromStack 2 stack
     put frame { stack = x1 : x2 : drop 2 stack }
 
-performSpecialInstruction :: SpecialInstruction -> State Vm ()
+performSpecialInstruction :: SpecialInstruction -> StateT Vm IO ()
 performSpecialInstruction (InvokeF functionName) = do
     vm@Vm{frames, functions} <- get
     let currentFrame = head frames
@@ -152,10 +150,10 @@ performSpecialInstruction (InvokeF functionName) = do
       let func = head matchedFuncs
       case func of
           NativeFunction{realFunc}                          -> do
-              let (_, newFrame) = runState realFunc currentFrame
+              (_, newFrame) <- lift $ runStateT realFunc currentFrame
               let newFrames = newFrame : tail frames
-              trace "Invoked native" $ put vm { frames = newFrames }
-          func@Function{argTypes, returnType, instructions} -> trace "Invoked non-native" makeFrame
+              put vm { frames = newFrames }
+          func@Function{argTypes, returnType, instructions} -> makeFrame
               where makeFrame = do
                       -- todo check arg types?
                       let argN = length argTypes
@@ -189,34 +187,37 @@ incPc = do
     let newFrame = currentFrame { pc = succ pc }
     put vm { frames = newFrame : tail frames }
 
-performInstruction :: Instruction -> State Vm ()
+performInstruction :: Instruction -> StateT Vm IO ()
 performInstruction (FrameInstructionC instruction) = do
-    incPc
+    curState <- get
+    put $ execState incPc curState
     vm@Vm{frames} <- get
     let currentFrame@Frame{pc} = head frames
     let (_, newFrame) = runState (performFrameInstruction instruction) currentFrame
     put vm { frames = newFrame : tail frames }
 
 performInstruction (SpecialInstructionC instruction) = do
-    incPc
+    curState <- get
+    put $ execState incPc curState
     performSpecialInstruction instruction
 
 -- this only takes non-native function in consideration, because putting native
 -- functions in frame does not make sense
-vmStep :: Vm -> Vm
-vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm -- trace(show nextVm ++ "\n") nextVm
-    where (_, nextVm) = runState (performInstruction nextInstruction) vm
+vmStep :: Vm -> IO Vm
+vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm
+    where nextVm = execStateT (performInstruction nextInstruction) vm
           nextInstruction = instructions !! pc
 
 {-
     Runs vm until it has returned to its original frame, which
     is supposed to have return code on top as return value
 -}
-runVm :: Vm -> Int
-runVm coldVm = (runTilOneFrame . runToMain) coldVm
-    where runToMain :: Vm -> Vm -- it is supposed that main is second frame
-          runToMain vm@Vm{frames} | length frames == 2 = vm
-          runToMain vm                                 = (runToMain . vmStep) vm
-          runTilOneFrame vm@Vm{frames = [resFrame]}    = returnCode
+runVm :: Vm -> IO Int
+runVm coldVm = runToMain coldVm  >>= runTilOneFrame
+    where runToMain :: Vm -> IO Vm -- it is supposed that main is second frame
+          runToMain vm@Vm{frames} | length frames == 2 = return vm
+          runToMain vm                                 = vmStep vm >>= runToMain
+          runTilOneFrame :: Vm -> IO Int
+          runTilOneFrame vm@Vm{frames = [resFrame]}    = return returnCode
             where (IntV returnCode) = (head . stack) resFrame
-          runTilOneFrame vm                            = (runTilOneFrame . vmStep) vm
+          runTilOneFrame vm                            = vmStep vm >>= runTilOneFrame

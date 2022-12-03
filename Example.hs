@@ -64,4 +64,5 @@ nativeVm = baseVm { functions = [exNativeFunction, main] }
 main = do
     -- putStrLn "Print index of a fib number to calculate"
     -- i <- readLn :: IO Int
-    print $ runVm $ nativeVm
+    returnCode <- runVm nativeVm
+    print returnCode
