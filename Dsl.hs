@@ -21,7 +21,9 @@ module Dsl ( iRet
            , arrLen
            , newArr
            , arrLoad
-           , arrStore )
+           , arrStore 
+           -- subject to move to macros
+           , ldcString )
 where
 
 import Vm 
@@ -60,3 +62,13 @@ arrStore = FrameInstructionC $ ArrStore
 
 ldcW :: VmValue a => a -> Instruction
 ldcW = ldc . wrap
+
+-- this will move to macros later
+
+{- Makes an array on stack, loads all chars to it. stack: () -> stringArray -}
+ldcString :: String -> [Instruction]
+ldcString str = [ ldcW $ length str, newArr ] ++ loadStrInstr
+    where strIndexed :: [(Int, Char)]
+          strIndexed = zip [0..] str
+          loadStrInstr :: [Instruction]
+          loadStrInstr = concat [ [ldcW idx, ldcW ch, arrStore] | (idx, ch) <- strIndexed ]

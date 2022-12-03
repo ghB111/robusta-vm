@@ -6,6 +6,7 @@ module Function
     , Stack
     , exFunction
     , exNativeFunction
+    , NativeFunctionT
     ) where
 
 import Types ( Value(..), Type(..) )

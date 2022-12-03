@@ -1,4 +1,6 @@
 module Robusta ( baseVm
+               , baseVmArgs
+               , stdVmArgs
                , stdVm )
 where
 
@@ -16,22 +18,30 @@ import Stdlib
     The frame cannot be reentered, i.e. there are no exported functions at all
 -}
 baseVm :: Vm
-baseVm = Vm { frames = [baseFrame], functions = [] }
+baseVm = baseVmArgs []
+
+baseVmArgs :: [String] -> Vm
+baseVmArgs args = Vm { frames = [baseFrame args], functions = [] }
 
 {-
     Base vm with standard library installed
 -}
-stdVm = baseVm { functions = stdlib }
+stdVm :: Vm
+stdVm = stdVmArgs []
 
-baseFrame :: Frame
-baseFrame = Frame { variables = [], pc = 0, stack = [], function = baseFunction }
+stdVmArgs :: [String] -> Vm
+stdVmArgs args = (baseVmArgs args) { functions = stdlib }
 
-baseFunction :: Function
-baseFunction = Function { name = "bootstrap"
-                        , argTypes = [VoidT] -- it does not really get any arguements
-                        , returnType = IntT -- return value is return code
-                        , instructions = baseFunctionInstructions }
+baseFrame :: [String] -> Frame
+baseFrame args = Frame { variables = [], pc = 0, stack = [], function = baseFunction args }
 
-baseFunctionInstructions :: [Instruction]
-baseFunctionInstructions = [ invokeF "main"
-                           , iRet ]
+baseFunction :: [String] -> Function
+baseFunction args = Function { name = "bootstrap"
+                             , argTypes = [VoidT] -- it does not really get any arguements
+                             , returnType = IntT -- return value is return code
+                             , instructions = baseFunctionInstructions args }
+
+baseFunctionInstructions :: [String] -> [Instruction]
+baseFunctionInstructions args = [ invokeF "main" ]
+                                ++ (concat $ map (ldcString $) args) ++
+                                [ iRet ]

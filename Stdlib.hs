@@ -13,15 +13,32 @@ import Instruction
 import Execution
 import Dsl
 
-vmPrintLn = NativeFunction "std/println" $ do
+makeNative :: String -> NativeFunctionT -> Function
+makeNative name f = NativeFunction ("std/" ++ name) f
+
+vmPrintLn = makeNative "println" $ do
     frame@Frame{stack} <- get
-    let (ArrayV arr) = head stack
-    let stringToPrint = map toChar arr
+    let arr = head stack
+    let stringToPrint = toString arr
     liftIO $ putStrLn stringToPrint
     put frame { stack = tail stack }
-        where toChar :: Value -> Char
-              toChar (CharV ch) = ch
-              toChar _          = error "expected CharV"
+
+-- could be marked as pure
+vmAtoi = makeNative "atoi" $ do
+    frame@Frame{stack} <- get
+    let arr = head stack
+    let stringToParse = toString arr
+    let resInt = (read stringToParse) :: Int
+    put frame { stack = wrap resInt : tail stack }
 
 stdlib :: [Function]
-stdlib = [ vmPrintLn ]
+stdlib = [ vmPrintLn, vmAtoi ]
+
+-- utils
+toString :: Value -> String
+toString (ArrayV arr) = map toChar arr
+toString _            = error "toString conversion failed. Expected ArrayT"
+
+toChar :: Value -> Char
+toChar (CharV ch) = ch
+toChar _          = error "expected CharV"
