@@ -42,6 +42,12 @@ baseFunction args = Function { name = "bootstrap"
                              , instructions = baseFunctionInstructions args }
 
 baseFunctionInstructions :: [String] -> [Instruction]
-baseFunctionInstructions args = [ invokeF "main" ]
-                                ++ (concat $ map (ldcString $) args) ++
-                                [ iRet ]
+baseFunctionInstructions args =  [ldcW $ length args, newArr]
+                              ++ loadAllStringsToArr
+                              ++ [ invokeF "main" ]
+                              ++ [ iRet ]
+    where indexedArgs :: [(Int, [Instruction])]
+          indexedArgs = zip [0..] $ map (ldcString $) args
+          loadAllStringsToArr :: [Instruction]
+          loadAllStringsToArr = concat [ (ldcW idx : instr) ++ [arrStore]  | (idx, instr) <- indexedArgs ]
+

@@ -31,8 +31,12 @@ vmAtoi = makeNative "atoi" $ do
     let resInt = (read stringToParse) :: Int
     put frame { stack = wrap resInt : tail stack }
 
+vmTrace = makeNative "debug/trace" $ do
+    state <- get
+    liftIO $ print state
+
 stdlib :: [Function]
-stdlib = [ vmPrintLn, vmAtoi ]
+stdlib = [ vmPrintLn, vmAtoi, vmTrace ]
 
 -- utils
 toString :: Value -> String

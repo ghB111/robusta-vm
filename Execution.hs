@@ -106,8 +106,8 @@ performFrameInstruction (IfNe gotoDest) = performBranch gotoDest [LT, GT]
 
 performFrameInstruction (ILoad idx) = do
     frame@Frame{stack, variables} <- get
-    let x = getIntV $ variables !! idx
-    put frame { stack = wrap x : stack }
+    let x = variables !! idx
+    put frame { stack = x : stack }
 
 performFrameInstruction (IStore idx) = do
     -- This is a funny one, because unlike JVM, we do not have
@@ -115,9 +115,9 @@ performFrameInstruction (IStore idx) = do
     -- have to lazily allocate space for new variables
     -- NOTE variables do not have static type, it can change
     frame@Frame{stack, variables} <- get
-    let [x] = map getIntV $ copyNFromStack 1 stack
+    let x = head stack
     let trustedVariables = makeSureFits idx variables
-    put frame { stack = drop 1 stack, variables = replace trustedVariables idx $ wrap x }
+    put frame { stack = drop 1 stack, variables = replace trustedVariables idx x }
     where makeSureFits :: Int -> [Value] -> [Value]
           makeSureFits idx vars
             | allocateN > 0   = vars ++ (take allocateN $ repeat (VoidV ()))
