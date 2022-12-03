@@ -141,6 +141,32 @@ performFrameInstruction Swap = do
     let [x1, x2] = copyNFromStack 2 stack
     put frame { stack = x1 : x2 : drop 2 stack }
 
+performFrameInstruction NewArr = do
+    frame@Frame{stack} <- get
+    let (IntV newArrLen) = head stack
+    let newArr = wrap $ take newArrLen $ repeat () -- an array is initialized with voids
+    put frame { stack = newArr : tail stack }
+
+-- as arrays are value type, array does not
+-- get deleted from the stack
+performFrameInstruction ArrLen = do
+    frame@Frame{stack} <- get
+    let (ArrayV arr) = head stack
+    let arrLen = length arr
+    put frame { stack = wrap arrLen : stack }
+
+performFrameInstruction ArrLoad = do
+    frame@Frame{stack} <- get
+    let [ArrayV arr, IntV idx] = copyNFromStack 2 stack
+    let extractedElement = arr !! idx
+    put frame { stack = extractedElement : tail stack }
+
+performFrameInstruction ArrStore = do
+    frame@Frame{stack} <- get
+    let [ArrayV arr, IntV idx, value] = copyNFromStack 3 stack
+    let patchedArr = ArrayV $ replace arr idx value
+    put frame { stack = patchedArr : drop 3 stack }
+
 performSpecialInstruction :: SpecialInstruction -> StateT Vm IO ()
 performSpecialInstruction (InvokeF functionName) = do
     vm@Vm{frames, functions} <- get

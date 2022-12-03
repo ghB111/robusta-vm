@@ -39,8 +39,12 @@ data FrameInstruction
     | IfNe     { gotoDest :: Int }
     | ILoad    { idx :: Int }
     | IStore   { idx :: Int }
-    | Ldc { value :: Value }
+    | Ldc      { value :: Value }
     | Dup
     | Pop
     | Swap
+    | ArrLen
+    | NewArr
+    | ArrLoad
+    | ArrStore
     deriving (Show, Read)
