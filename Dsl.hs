@@ -1,22 +1,27 @@
 module Dsl ( iRet
            , ret
            , invokeF
-           , dup     
-           , pop     
-           , swap    
-           , nop     
-           , iAdd    
+           , dup
+           , pop
+           , swap
+           , nop
+           , iAdd
            , iSub
-           , iMul    
-           , iDiv    
-           , iNeg    
-           , iConst0 
-           , iConst1 
-           , ldc     
-           , goto    
-           , iLoad   
-           , iStore  
-           , ifICmpNe )
+           , iMul
+           , iDiv
+           , iNeg
+           , iConst0
+           , iConst1
+           , ldc
+           , ldcW
+           , goto
+           , iLoad
+           , iStore
+           , ifICmpNe
+           , arrLen
+           , newArr
+           , arrLoad
+           , arrStore )
 where
 
 import Vm 
@@ -48,3 +53,10 @@ goto     = FrameInstructionC . Goto
 iLoad    = FrameInstructionC . ILoad
 iStore   = FrameInstructionC . IStore
 ifICmpNe = FrameInstructionC . IfICmpNe
+arrLen   = FrameInstructionC $ ArrLen
+newArr   = FrameInstructionC $ NewArr
+arrLoad  = FrameInstructionC $ ArrLoad
+arrStore = FrameInstructionC $ ArrStore
+
+ldcW :: VmValue a => a -> Instruction
+ldcW = ldc . wrap

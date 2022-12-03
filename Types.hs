@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Types ( Value(..), Type(..), vType, wrap, makeDefault )
+
+module Types ( Value(..), Type(..), vType, wrap, VmValue, makeDefault )
 where
 
 data Value 
