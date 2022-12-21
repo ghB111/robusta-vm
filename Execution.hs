@@ -213,6 +213,9 @@ incPc = do
     let newFrame = currentFrame { pc = succ pc }
     put vm { frames = newFrame : tail frames }
 
+performHeapInstruction :: Instruction -> State (Frame, Heap) ()
+performHeapInstruction = undefined
+
 performInstruction :: Instruction -> StateT Vm IO ()
 performInstruction (FrameInstructionC instruction) = do
     curState <- get
@@ -226,6 +229,14 @@ performInstruction (SpecialInstructionC instruction) = do
     curState <- get
     put $ execState incPc curState
     performSpecialInstruction instruction
+
+performInstruction (HeapInstructionC instruction) = do
+    curState <- get
+    put $ execState incPc curState
+    vm@Vm{frames, heap} <- get
+    let currentFrame@Frame{pc} = head frames
+    let (_, (newFrame, newHeap)) = runState (performHeapInstruction instruction) (currentFrame, heap)
+    put vm { frames = newFrame : tail frames, heap = newHeap }
 
 -- this only takes non-native function in consideration, because putting native
 -- functions in frame does not make sense

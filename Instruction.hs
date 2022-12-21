@@ -8,12 +8,20 @@ import Types ( Value(..) )
 data Instruction
     = SpecialInstructionC SpecialInstruction
     | FrameInstructionC FrameInstruction
+    | HeapInstructionC HeapInstruction
     deriving (Show, Read)
 
 data SpecialInstruction
     = IReturn
     | Return
     | InvokeF  { functionName :: String }
+    deriving (Show, Read)
+
+data HeapInstruction
+    = ArrLen
+    | NewArr
+    | ArrLoad
+    | ArrStore
     deriving (Show, Read)
 
 data FrameInstruction
@@ -43,8 +51,4 @@ data FrameInstruction
     | Dup
     | Pop
     | Swap
-    | ArrLen
-    | NewArr
-    | ArrLoad
-    | ArrStore
     deriving (Show, Read)

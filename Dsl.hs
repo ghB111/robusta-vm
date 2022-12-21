@@ -55,10 +55,10 @@ goto     = FrameInstructionC . Goto
 iLoad    = FrameInstructionC . ILoad
 iStore   = FrameInstructionC . IStore
 ifICmpNe = FrameInstructionC . IfICmpNe
-arrLen   = FrameInstructionC $ ArrLen
-newArr   = FrameInstructionC $ NewArr
-arrLoad  = FrameInstructionC $ ArrLoad
-arrStore = FrameInstructionC $ ArrStore
+arrLen   = HeapInstructionC $ ArrLen
+newArr   = HeapInstructionC $ NewArr
+arrLoad  = HeapInstructionC $ ArrLoad
+arrStore = HeapInstructionC $ ArrStore
 
 ldcW :: VmValue a => a -> Instruction
 ldcW = ldc . wrap

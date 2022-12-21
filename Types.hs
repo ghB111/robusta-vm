@@ -3,11 +3,13 @@
 module Types ( Value(..), Type(..), vType, wrap, VmValue, makeDefault )
 where
 
+type HeapRef = Int
+
 data Value 
     = VoidV ()
     | IntV Int
     | CharV Char
-    | ArrayV [Value]
+    | ArrayV HeapRef
     deriving (Show, Read)
 
 data Type
@@ -27,7 +29,7 @@ vType (ArrayV _) = ArrayT
 makeDefault :: Type -> Value
 makeDefault VoidT   = VoidV ()
 makeDefault IntT    = wrap (0 :: Int)
-makeDefault ArrayT  = wrap ([] :: [()]) -- todo this is a funny wtf moment
+makeDefault ArrayT  = wrap (0 :: Int) -- todo this is a funny wtf moment
 
 class VmValue a where
     wrap :: a -> Value
@@ -40,6 +42,3 @@ instance VmValue Char where
 
 instance VmValue () where
     wrap x = VoidV x
-
-instance (VmValue a) => VmValue [a] where
-    wrap x = ArrayV $ map wrap x
