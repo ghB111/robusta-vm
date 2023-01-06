@@ -19,7 +19,7 @@ replace xs i e = case splitAt i xs of
 
 -- (others, stack1, stack2,... stackN) => (stack1, stack2, ... stackN)
 copyNFromStack :: Int -> Stack -> [Value]
-copyNFromStack n = reverse . (take n)
+copyNFromStack n = reverse . take n
 
 -- throws if not IntV
 getIntV :: Value -> Int
@@ -31,7 +31,7 @@ performIntegerComparisonBranch gotoDest orderings = do
     frame@Frame{stack, pc} <- get
     let [x1, x2] = map getIntV $ copyNFromStack 2 stack
     let cmpRes = compare x1 x2
-    let newPc = if any (==cmpRes) orderings then gotoDest else pc
+    let newPc = if cmpRes `elem` orderings then gotoDest else pc
     put frame{ stack = drop 2 stack, pc = newPc}
 
 performBranch :: Int -> [Ordering] -> State Frame ()
@@ -39,7 +39,7 @@ performBranch gotoDest orderings = do
     frame@Frame{stack, pc} <- get
     let [x] = map getIntV $ copyNFromStack 1 stack
     let cmpRes = compare x 0
-    let newPc = if any (==cmpRes) orderings then gotoDest else pc
+    let newPc = if cmpRes `elem` orderings then gotoDest else pc
     put frame{ stack = drop 1 stack, pc = newPc}
     
 
@@ -58,19 +58,19 @@ performFrameInstruction IAdd = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x1 + x2
-    put $ frame { stack = (wrap r):xs }
+    put $ frame { stack = wrap r : xs }
 
 performFrameInstruction IMul = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x1 * x2
-    put $ frame { stack = (wrap r):xs }
+    put $ frame { stack = wrap r : xs }
 
 performFrameInstruction ISub = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x2 - x1
-    put $ frame { stack = (wrap r):xs }
+    put $ frame { stack = wrap r : xs }
 
 performFrameInstruction INeg = do
     frame <- get
@@ -120,8 +120,8 @@ performFrameInstruction (IStore idx) = do
     put frame { stack = drop 1 stack, variables = replace trustedVariables idx x }
     where makeSureFits :: Int -> [Value] -> [Value]
           makeSureFits idx vars
-            | allocateN > 0   = vars ++ (take allocateN $ repeat (VoidV ()))
-            where allocateN = succ idx - (length vars)
+            | allocateN > 0   = vars ++ take allocateN $ repeat (VoidV ())
+            where allocateN = succ idx - length vars
           makeSureFits _ vars = vars
 
 performFrameInstruction (Ldc value) = do
@@ -144,7 +144,7 @@ performFrameInstruction Swap = do
 performFrameInstruction NewArr = do
     frame@Frame{stack} <- get
     let (IntV newArrLen) = head stack
-    let newArr = wrap $ take newArrLen $ repeat () -- an array is initialized with voids
+    let newArr = wrap $ replicate newArrLen () -- an array is initialized with voids
     put frame { stack = newArr : tail stack }
 
 -- as arrays are value type, array does not

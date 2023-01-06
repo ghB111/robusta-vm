@@ -47,7 +47,7 @@ baseFunctionInstructions args =  [ldcW $ length args, newArr]
                               ++ [ invokeF "main" ]
                               ++ [ iRet ]
     where indexedArgs :: [(Int, [Instruction])]
-          indexedArgs = zip [0..] $ map (ldcString $) args
+          indexedArgs = zip [0..] $ map ldcString args
           loadAllStringsToArr :: [Instruction]
           loadAllStringsToArr = concat [ (ldcW idx : instr) ++ [arrStore]  | (idx, instr) <- indexedArgs ]
 

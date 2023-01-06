@@ -14,7 +14,7 @@ import Execution
 import Dsl
 
 makeNative :: String -> NativeFunctionT -> Function
-makeNative name f = NativeFunction ("std/" ++ name) f
+makeNative name = NativeFunction ("std/" ++ name)
 
 vmPrintLn = makeNative "println" $ do
     frame@Frame{stack} <- get
@@ -28,7 +28,7 @@ vmAtoi = makeNative "atoi" $ do
     frame@Frame{stack} <- get
     let arr = head stack
     let stringToParse = toString arr
-    let resInt = (read stringToParse) :: Int
+    let resInt = read stringToParse :: Int
     put frame { stack = wrap resInt : tail stack }
 
 vmTrace = makeNative "debug/trace" $ do
