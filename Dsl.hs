@@ -65,10 +65,10 @@ ldcW = ldc . wrap
 
 -- this will move to macros later
 
-{- Makes an array on stack, loads all chars to it. stack: () -> stringArray -}
+{- Makes an array on stack, loads all chars to it. stack: () -> stringArrayRef -}
 ldcString :: String -> [Instruction]
 ldcString str = [ ldcW $ length str, newArr ] ++ loadStrInstr
     where strIndexed :: [(Int, Char)]
           strIndexed = zip [0..] str
           loadStrInstr :: [Instruction]
-          loadStrInstr = concat [ [ldcW idx, ldcW ch, arrStore] | (idx, ch) <- strIndexed ]
+          loadStrInstr = concat [ [dup, ldcW idx, ldcW ch, arrStore] | (idx, ch) <- strIndexed ]

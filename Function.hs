@@ -9,9 +9,11 @@ module Function
     , NativeFunctionT
     ) where
 
+import Control.Monad.State
+
 import Types ( Value(..), Type(..) )
 import Instruction
-import Control.Monad.State
+import Heap hiding (get, put)
 
 type Stack = [Value]
 
@@ -26,7 +28,7 @@ data Frame = Frame
     } deriving (Show, Read)
 
 
-type NativeFunctionT = StateT Frame IO ()
+type NativeFunctionT = StateT (Frame, Heap) IO ()
 data Function = Function { name :: String
                          , argTypes :: [Type]
                          , returnType :: Type

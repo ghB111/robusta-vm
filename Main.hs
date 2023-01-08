@@ -15,14 +15,8 @@ helloWorld = Function { name = "main"
                       , argTypes = [ArrayT]
                       , returnType = IntT
                       , instructions = mainInstructions }
-    where mainInstructions =  [ ldcW $ length str, newArr ] 
-                           ++ loadStrInstr
+    where mainInstructions =  ldcString "Hello World!"
                            ++ [ invokeF "std/println", ldcW (0 :: Int), iRet ]
-          str = "Hello world!"
-          strIndexed :: [(Int, Char)]
-          strIndexed = zip [0..] str
-          loadStrInstr :: [Instruction]
-          loadStrInstr = concat [ [ldcW idx, ldcW ch, arrStore] | (idx, ch) <- strIndexed ]
 
 {- Expects two main integer args. Returns their sum as return code -}
 sumTwoIntegers :: Function

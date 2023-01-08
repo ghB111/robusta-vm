@@ -8,7 +8,12 @@ import Data.List
 
 import Types
 import Vm ( Vm (..) )
-import Instruction (  Instruction(..), FrameInstruction(..), SpecialInstruction(..) )
+import Heap hiding (get, put)
+import qualified Heap
+import Instruction ( Instruction(..)
+                   , FrameInstruction(..)
+                   , SpecialInstruction(..)
+                   , HeapInstruction(..) )
 import Function ( Frame(..), Stack, Function(..) )
 
 -- https://www.reddit.com/r/haskell/comments/8jui5k/how_to_replace_an_element_at_an_index_in_a_list/
@@ -120,7 +125,7 @@ performFrameInstruction (IStore idx) = do
     put frame { stack = drop 1 stack, variables = replace trustedVariables idx x }
     where makeSureFits :: Int -> [Value] -> [Value]
           makeSureFits idx vars
-            | allocateN > 0   = vars ++ take allocateN $ repeat (VoidV ())
+            | allocateN > 0   = vars ++ replicate allocateN (VoidV ())
             where allocateN = succ idx - length vars
           makeSureFits _ vars = vars
 
@@ -141,44 +146,18 @@ performFrameInstruction Swap = do
     let [x1, x2] = copyNFromStack 2 stack
     put frame { stack = x1 : x2 : drop 2 stack }
 
-performFrameInstruction NewArr = do
-    frame@Frame{stack} <- get
-    let (IntV newArrLen) = head stack
-    let newArr = wrap $ replicate newArrLen () -- an array is initialized with voids
-    put frame { stack = newArr : tail stack }
-
--- as arrays are value type, array does not
--- get deleted from the stack
-performFrameInstruction ArrLen = do
-    frame@Frame{stack} <- get
-    let (ArrayV arr) = head stack
-    let arrLen = length arr
-    put frame { stack = wrap arrLen : stack }
-
-performFrameInstruction ArrLoad = do
-    frame@Frame{stack} <- get
-    let [ArrayV arr, IntV idx] = copyNFromStack 2 stack
-    let extractedElement = arr !! idx
-    put frame { stack = extractedElement : tail stack }
-
-performFrameInstruction ArrStore = do
-    frame@Frame{stack} <- get
-    let [ArrayV arr, IntV idx, value] = copyNFromStack 3 stack
-    let patchedArr = ArrayV $ replace arr idx value
-    put frame { stack = patchedArr : drop 3 stack }
-
 performSpecialInstruction :: SpecialInstruction -> StateT Vm IO ()
 performSpecialInstruction (InvokeF functionName) = do
-    vm@Vm{frames, functions} <- get
+    vm@Vm{frames, functions, heap} <- get
     let currentFrame = head frames
     let matchedFuncs = filter (\x -> name x == functionName) functions
     if null matchedFuncs then error $ "function name " ++ functionName ++ " not found" else do
       let func = head matchedFuncs
       case func of
           NativeFunction{realFunc}                          -> do
-              (_, newFrame) <- lift $ runStateT realFunc currentFrame
+              (_, (newFrame, newHeap)) <- lift $ runStateT realFunc (currentFrame, heap)
               let newFrames = newFrame : tail frames
-              put vm { frames = newFrames }
+              put vm { frames = newFrames, heap = newHeap}
           func@Function{argTypes, returnType, instructions} -> makeFrame
               where makeFrame = do
                       -- todo check arg types?
@@ -213,8 +192,35 @@ incPc = do
     let newFrame = currentFrame { pc = succ pc }
     put vm { frames = newFrame : tail frames }
 
-performHeapInstruction :: Instruction -> State (Frame, Heap) ()
-performHeapInstruction = undefined
+performHeapInstruction :: HeapInstruction -> State (Frame, Heap) ()
+performHeapInstruction NewArr = do
+    (frame@Frame{stack}, heap) <- get
+    let (IntV newArrLen) = head stack
+    let (newArr, newHeap) = alloc heap newArrLen
+    put (frame { stack = ArrayV newArr : tail stack }, newHeap)
+
+performHeapInstruction ArrLen = do
+    (frame@Frame{stack}, heap) <- get
+    let (ArrayV arrRef) = head stack
+    let arr = Heap.get heap arrRef
+    let arrLen = length arr
+    put (frame { stack = wrap arrLen : tail stack }, heap)
+
+performHeapInstruction ArrLoad = do
+    (frame@Frame{stack}, heap) <- get
+    let [ArrayV arrRef, IntV idx] = copyNFromStack 2 stack
+    let arr = Heap.get heap arrRef
+    let extractedElement = arr !! idx
+    put (frame { stack = extractedElement : drop 2 stack }, heap)
+
+performHeapInstruction ArrStore = do
+    (frame@Frame{stack}, heap) <- get
+    let [ArrayV arrRef, IntV idx, value] = copyNFromStack 3 stack
+    let arr = Heap.get heap arrRef
+    let patchedArr = replace arr idx value
+    let newHeap = Heap.put heap arrRef patchedArr
+    put (frame { stack = drop 3 stack }, newHeap)
+
 
 performInstruction :: Instruction -> StateT Vm IO ()
 performInstruction (FrameInstructionC instruction) = do

@@ -13,6 +13,8 @@ import Dsl
 
 import Stdlib
 
+import Heap
+
 {-
     Vm with a bootstrap frame. This vm  you can lauch, provided you add a main function to it 
     The frame cannot be reentered, i.e. there are no exported functions at all
@@ -21,7 +23,7 @@ baseVm :: Vm
 baseVm = baseVmArgs []
 
 baseVmArgs :: [String] -> Vm
-baseVmArgs args = Vm { frames = [baseFrame args], functions = [] }
+baseVmArgs args = Vm { frames = [baseFrame args], functions = [], heap = makeEmptyHeap }
 
 {-
     Base vm with standard library installed

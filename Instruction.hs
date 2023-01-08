@@ -1,6 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Instruction ( Instruction(..), SpecialInstruction(..), FrameInstruction(..) )
+module Instruction ( Instruction(..)
+                   , SpecialInstruction(..)
+                   , FrameInstruction(..)
+                   , HeapInstruction(..) )
 where
 
 import Types ( Value(..) )

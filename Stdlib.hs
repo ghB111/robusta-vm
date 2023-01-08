@@ -13,23 +13,28 @@ import Instruction
 import Execution
 import Dsl
 
+import qualified Heap
+import Heap hiding (get, put)
+
 makeNative :: String -> NativeFunctionT -> Function
 makeNative name = NativeFunction ("std/" ++ name)
 
 vmPrintLn = makeNative "println" $ do
-    frame@Frame{stack} <- get
-    let arr = head stack
+    (frame@Frame{stack}, heap) <- get
+    let (ArrayV arrRef) = head stack
+    let arr = Heap.get heap arrRef
     let stringToPrint = toString arr
     liftIO $ putStrLn stringToPrint
-    put frame { stack = tail stack }
+    put (frame { stack = tail stack }, heap)
 
 -- could be marked as pure
 vmAtoi = makeNative "atoi" $ do
-    frame@Frame{stack} <- get
-    let arr = head stack
+    (frame@Frame{stack}, heap) <- get
+    let (ArrayV arrRef) = head stack
+    let arr = Heap.get heap arrRef
     let stringToParse = toString arr
     let resInt = read stringToParse :: Int
-    put frame { stack = wrap resInt : tail stack }
+    put (frame { stack = wrap resInt : tail stack }, heap)
 
 vmTrace = makeNative "debug/trace" $ do
     state <- get
@@ -39,9 +44,8 @@ stdlib :: [Function]
 stdlib = [ vmPrintLn, vmAtoi, vmTrace ]
 
 -- utils
-toString :: Value -> String
-toString (ArrayV arr) = map toChar arr
-toString _            = error "toString conversion failed. Expected ArrayT"
+toString :: [Value] -> String
+toString = map toChar
 
 toChar :: Value -> Char
 toChar (CharV ch) = ch

@@ -3,7 +3,8 @@
 module Types ( Value(..), Type(..), vType, wrap, VmValue, makeDefault )
 where
 
-type HeapRef = Int
+-- same as HeapKey. Needs to be refactored
+type HeapRef = Integer
 
 data Value 
     = VoidV ()
