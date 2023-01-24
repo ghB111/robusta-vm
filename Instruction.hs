@@ -15,41 +15,41 @@ data Instruction
     deriving (Show, Read)
 
 data SpecialInstruction
-    = IReturn
+    = AReturn
     | Return
     | InvokeF  { functionName :: String }
     deriving (Show, Read)
 
 data HeapInstruction
     = ArrLen
-    | NewArr
+    | ArrNew
     | ArrLoad
     | ArrStore
     deriving (Show, Read)
 
 data FrameInstruction
     = Nop
-    | IAdd
-    | ISub
-    | IMul
-    | IDiv
-    | INeg
-    | IConst0
-    | IConst1
+    | Add
+    | Sub
+    | Mul
+    | Div
+    | Neg
+    | Const0
+    | Const1
     | Goto     { gotoDest :: Int }
-    | IfICmpEq { gotoDest :: Int }
-    | IfICmpGe { gotoDest :: Int }
-    | IfICmpGt { gotoDest :: Int }
-    | IfICmpLe { gotoDest :: Int }
-    | IfICmpLt { gotoDest :: Int }
-    | IfICmpNe { gotoDest :: Int }
+    | IfCmpEq  { gotoDest :: Int }
+    | IfCmpGe  { gotoDest :: Int }
+    | IfCmpGt  { gotoDest :: Int }
+    | IfCmpLe  { gotoDest :: Int }
+    | IfCmpLt  { gotoDest :: Int }
+    | IfCmpNe  { gotoDest :: Int }
     | IfEq     { gotoDest :: Int }
     | IfGt     { gotoDest :: Int }
     | IfLe     { gotoDest :: Int }
     | IfLt     { gotoDest :: Int }
     | IfNe     { gotoDest :: Int }
-    | ILoad    { idx :: Int }
-    | IStore   { idx :: Int }
+    | VarLoad    { idx :: Int }
+    | VarStore   { idx :: Int }
     | Ldc      { value :: Value }
     | Dup
     | Pop

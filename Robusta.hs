@@ -44,10 +44,10 @@ baseFunction args = Function { name = "bootstrap"
                              , instructions = baseFunctionInstructions args }
 
 baseFunctionInstructions :: [String] -> [Instruction]
-baseFunctionInstructions args =  [ldcW $ length args, newArr]
+baseFunctionInstructions args =  [ldcW $ length args, arrNew]
                               ++ loadAllStringsToArr
                               ++ [ invokeF "main" ]
-                              ++ [ iRet ]
+                              ++ [ aRet ]
     where indexedArgs :: [(Int, [Instruction])]
           indexedArgs = zip [0..] $ map ldcString args
           loadAllStringsToArr :: [Instruction]

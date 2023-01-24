@@ -59,49 +59,49 @@ performFrameInstruction (Goto to) = do
     frame <- get
     put (frame {pc = to})
 
-performFrameInstruction IAdd = do
+performFrameInstruction Add = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x1 + x2
     put $ frame { stack = wrap r : xs }
 
-performFrameInstruction IMul = do
+performFrameInstruction Mul = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x1 * x2
     put $ frame { stack = wrap r : xs }
 
-performFrameInstruction ISub = do
+performFrameInstruction Sub = do
     frame <- get
     let ((IntV x1):(IntV x2):xs) = stack frame
     let r = x2 - x1
     put $ frame { stack = wrap r : xs }
 
-performFrameInstruction INeg = do
+performFrameInstruction Neg = do
     frame <- get
     let ((IntV x):xs) = stack frame
     put $ frame { stack = wrap (-x):xs }
 
-performFrameInstruction IConst0 = do
+performFrameInstruction Const0 = do
     frame@Frame{stack} <- get
     put $ frame { stack = wrap (0 :: Int) : stack }
 
-performFrameInstruction IConst1 = do
+performFrameInstruction Const1 = do
     frame@Frame{stack} <- get
     put $ frame { stack = wrap (1 :: Int) : stack }
 
-performFrameInstruction IDiv = do
+performFrameInstruction Div = do
     frame@Frame{stack} <- get
     let ( (IntV x1) : (IntV x2) : xs ) = stack
     let r = x2 `div` x1
     put $ frame { stack = wrap r : xs }
 
-performFrameInstruction (IfICmpEq gotoDest) = performIntegerComparisonBranch gotoDest [EQ]
-performFrameInstruction (IfICmpGe gotoDest) = performIntegerComparisonBranch gotoDest [GT, EQ]
-performFrameInstruction (IfICmpGt gotoDest) = performIntegerComparisonBranch gotoDest [GT]
-performFrameInstruction (IfICmpLe gotoDest) = performIntegerComparisonBranch gotoDest [LT, EQ]
-performFrameInstruction (IfICmpLt gotoDest) = performIntegerComparisonBranch gotoDest [LT]
-performFrameInstruction (IfICmpNe gotoDest) = performIntegerComparisonBranch gotoDest [LT, GT]
+performFrameInstruction (IfCmpEq gotoDest) = performIntegerComparisonBranch gotoDest [EQ]
+performFrameInstruction (IfCmpGe gotoDest) = performIntegerComparisonBranch gotoDest [GT, EQ]
+performFrameInstruction (IfCmpGt gotoDest) = performIntegerComparisonBranch gotoDest [GT]
+performFrameInstruction (IfCmpLe gotoDest) = performIntegerComparisonBranch gotoDest [LT, EQ]
+performFrameInstruction (IfCmpLt gotoDest) = performIntegerComparisonBranch gotoDest [LT]
+performFrameInstruction (IfCmpNe gotoDest) = performIntegerComparisonBranch gotoDest [LT, GT]
 
 performFrameInstruction (IfEq gotoDest) = performBranch gotoDest [EQ]
 performFrameInstruction (IfGt gotoDest) = performBranch gotoDest [GT]
@@ -109,12 +109,12 @@ performFrameInstruction (IfLe gotoDest) = performBranch gotoDest [LT, EQ]
 performFrameInstruction (IfLt gotoDest) = performBranch gotoDest [LT]
 performFrameInstruction (IfNe gotoDest) = performBranch gotoDest [LT, GT]
 
-performFrameInstruction (ILoad idx) = do
+performFrameInstruction (VarLoad idx) = do
     frame@Frame{stack, variables} <- get
     let x = variables !! idx
     put frame { stack = x : stack }
 
-performFrameInstruction (IStore idx) = do
+performFrameInstruction (VarStore idx) = do
     -- This is a funny one, because unlike JVM, we do not have
     -- information about amount of variables a method needs. So we basically
     -- have to lazily allocate space for new variables
@@ -170,7 +170,7 @@ performSpecialInstruction (InvokeF functionName) = do
                       put vm { frames = newFrames }
     
 -- To be fair, this wouldn't be any different for an AReturn or LReturn
-performSpecialInstruction IReturn = do
+performSpecialInstruction AReturn = do
     vm@Vm{frames} <- get
     let currentFrame = head frames
     let currentStack = stack currentFrame
@@ -193,7 +193,7 @@ incPc = do
     put vm { frames = newFrame : tail frames }
 
 performHeapInstruction :: HeapInstruction -> State (Frame, Heap) ()
-performHeapInstruction NewArr = do
+performHeapInstruction ArrNew = do
     (frame@Frame{stack}, heap) <- get
     let (IntV newArrLen) = head stack
     let (newArr, newHeap) = alloc heap newArrLen

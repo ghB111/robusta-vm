@@ -1,31 +1,33 @@
-module Dsl ( iRet
+module Dsl ( aRet
            , ret
            , invokeF
            , dup
            , pop
            , swap
            , nop
-           , iAdd
-           , iSub
-           , iMul
-           , iDiv
-           , iNeg
-           , iConst0
-           , iConst1
+           , add
+           , sub
+           , mul
+           , div
+           , neg
+           , const0
+           , const1
            , ldc
            , ldcW
            , ldcWi
            , goto
-           , iLoad
-           , iStore
-           , ifICmpNe
+           , varLoad
+           , varStore
+           , ifCmpNe
            , arrLen
-           , newArr
+           , arrNew
            , arrLoad
            , arrStore 
            -- subject to move to macros
            , ldcString )
 where
+
+import Prelude hiding (div)
 
 import Vm 
 import Function
@@ -35,7 +37,7 @@ import Execution
 
 
 
-iRet    = SpecialInstructionC $ IReturn
+aRet    = SpecialInstructionC $ AReturn
 ret     = SpecialInstructionC $ Return
 invokeF = SpecialInstructionC . InvokeF
 
@@ -44,20 +46,20 @@ dup      = FrameInstructionC $ Dup
 pop      = FrameInstructionC $ Pop
 swap     = FrameInstructionC $ Swap
 nop      = FrameInstructionC $ Nop
-iAdd     = FrameInstructionC $ IAdd
-iSub     = FrameInstructionC $ ISub
-iMul     = FrameInstructionC $ IMul
-iDiv     = FrameInstructionC $ IDiv
-iNeg     = FrameInstructionC $ INeg
-iConst0  = FrameInstructionC $ IConst0
-iConst1  = FrameInstructionC $ IConst1
+add     = FrameInstructionC $ Add
+sub     = FrameInstructionC $ Sub
+mul     = FrameInstructionC $ Mul
+div     = FrameInstructionC $ Div
+neg     = FrameInstructionC $ Neg
+const0  = FrameInstructionC $ Const0
+const1  = FrameInstructionC $ Const1
 ldc      = FrameInstructionC . Ldc
 goto     = FrameInstructionC . Goto
-iLoad    = FrameInstructionC . ILoad
-iStore   = FrameInstructionC . IStore
-ifICmpNe = FrameInstructionC . IfICmpNe
+varLoad    = FrameInstructionC . VarLoad
+varStore   = FrameInstructionC . VarStore
+ifCmpNe = FrameInstructionC . IfCmpNe
 arrLen   = HeapInstructionC $ ArrLen
-newArr   = HeapInstructionC $ NewArr
+arrNew   = HeapInstructionC $ ArrNew
 arrLoad  = HeapInstructionC $ ArrLoad
 arrStore = HeapInstructionC $ ArrStore
 
@@ -71,7 +73,7 @@ ldcWi = ldcW
 
 {- Makes an array on stack, loads all chars to it. stack: () -> stringArrayRef -}
 ldcString :: String -> [Instruction]
-ldcString str = [ ldcW $ length str, newArr ] ++ loadStrInstr
+ldcString str = [ ldcW $ length str, arrNew ] ++ loadStrInstr
     where strIndexed :: [(Int, Char)]
           strIndexed = zip [0..] str
           loadStrInstr :: [Instruction]

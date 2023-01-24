@@ -17,7 +17,7 @@ functionThatReturnsArray = Function { name = "makeArray"
                                     , returnType = ArrayT
                                     , instructions = instructions }
     where instructions = [ ldcWi 4 -- 4(array size)
-                         , newArr -- arrRef()
+                         , arrNew -- arrRef()
                          , dup -- arrRef(), arrRef()
                          , ldcWi 0 -- arrRef(), arrRef(), 0
                          , ldcWi 0 -- arrRef(), arrRef(), 0
@@ -34,7 +34,7 @@ functionThatReturnsArray = Function { name = "makeArray"
                          , ldcWi 3
                          , ldcWi 3
                          , arrStore
-                         , iRet ]
+                         , aRet ]
 
 mainFuncExample :: Function
 mainFuncExample = Function { name = "main"
@@ -45,7 +45,7 @@ mainFuncExample = Function { name = "main"
                          , dup
                          , invokeF "std/println"
                          , ldcWi 0
-                         , iRet ]
+                         , aRet ]
 
 exVm :: Vm
 exVm = stdVmWith [mainFuncExample, functionThatReturnsArray]
