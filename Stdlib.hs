@@ -45,7 +45,8 @@ stdlib = [ vmPrintLn, vmAtoi, vmTrace ]
 
 -- utils
 toString :: [Value] -> String
-toString = map toChar
+toString arr@((CharV _):_) = map toChar arr
+toString arr = show arr
 
 toChar :: Value -> Char
 toChar (CharV ch) = ch

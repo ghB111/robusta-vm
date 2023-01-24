@@ -37,7 +37,7 @@ alloc heap@Heap{mapping} size = (key, newHeap)
          key = nextId heap
 
 delete :: Heap -> HeapKey -> Heap
-delete heap key = heap
+delete Heap{mapping} key = Heap $ filter (\x -> fst x /= key) mapping
 
 get :: Heap -> HeapKey -> [Value]
 get Heap{mapping} key = foundArray

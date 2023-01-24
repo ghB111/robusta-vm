@@ -14,6 +14,7 @@ module Dsl ( iRet
            , iConst1
            , ldc
            , ldcW
+           , ldcWi
            , goto
            , iLoad
            , iStore
@@ -62,6 +63,9 @@ arrStore = HeapInstructionC $ ArrStore
 
 ldcW :: VmValue a => a -> Instruction
 ldcW = ldc . wrap
+
+ldcWi :: Int -> Instruction
+ldcWi = ldcW
 
 -- this will move to macros later
 

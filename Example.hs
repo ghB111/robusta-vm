@@ -60,9 +60,8 @@ nativeVm = baseVm { functions = [exNativeFunction, main] }
                              , ldc $ wrap (0 :: Int)
                              , iRet ]
 
--- will print i-th fib number, calculating it from the vm
+-- this will print "we now have side-effects"
+-- as a result of a native function call
 main = do
-    -- putStrLn "Print index of a fib number to calculate"
-    -- i <- readLn :: IO Int
     returnCode <- runVm nativeVm
     print returnCode
