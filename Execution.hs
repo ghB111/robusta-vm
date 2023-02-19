@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wincomplete-patterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Execution ( runVm )
@@ -247,6 +248,8 @@ performInstruction (HeapInstructionC instruction) = do
 -- this only takes non-native function in consideration, because putting native
 -- functions in frame does not make sense
 vmStep :: Vm -> IO Vm
+vmStep (Vm{frames=[]}) = error "Empty frames in vmStep"
+vmStep vm@Vm{frames = Frame{function = NativeFunction{}} : _} = error "Native function in vmStep"
 vmStep vm@Vm{frames = curFrame@Frame{pc, function = Function{instructions}} : _} = nextVm
     where nextVm = execStateT (performInstruction nextInstruction) vm
           nextInstruction = instructions !! pc

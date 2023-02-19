@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Heap ( Heap
             , HeapKey
             , makeEmptyHeap
