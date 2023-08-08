@@ -6,8 +6,15 @@ author:              "Roman Brek"
 # maintainer:          "example@example.com"
 copyright:           "2023 Roman Brek"
 
+custom-setup:
+  dependencies:
+    - base
+    - Cabal
+    - proto-lens-setup
+
 extra-source-files:
 - README.md
+- proto/**/*.proto
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -24,6 +31,7 @@ dependencies:
 - text
 - word8
 - bytestring
+- proto-lens-runtime
 
 ghc-options:
 - -Wall
@@ -37,7 +45,25 @@ ghc-options:
 - -Wredundant-constraints
 
 library:
-  source-dirs: src
+  source-dirs: 
+  - src
+  exposed-modules:
+  - Proto.Robusta
+  - Proto.Robusta_Fields
+  - CompilationUnit
+  - Dsl
+  - Example
+  - Execution
+  - Function
+  - Heap
+  - HeapExample
+  - Instruction
+  - Robusta
+  - Serialization
+  - Stdlib
+  - Types
+  - Vm
+
 
 executables:
   robusta-vm-exe:
@@ -49,6 +75,8 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - robusta-vm
+    - microlens
+    - proto-lens
 
 tests:
   robusta-vm-test:

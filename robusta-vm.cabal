@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 1.24
 
 -- This file has been generated from package.yaml by hpack version 0.35.2.
 --
@@ -14,16 +14,25 @@ maintainer:     Roman Brek
 copyright:      2023 Roman Brek
 license:        BSD3
 license-file:   LICENSE
-build-type:     Simple
+build-type:     Custom
 extra-source-files:
     README.md
+    proto/robusta.proto
 
 source-repository head
   type: git
   location: https://github.com/ghb111/robusta-vm
 
+custom-setup
+  setup-depends:
+      Cabal
+    , base
+    , proto-lens-setup
+
 library
   exposed-modules:
+      Proto.Robusta
+      Proto.Robusta_Fields
       CompilationUnit
       Dsl
       Example
@@ -46,6 +55,7 @@ library
       base >=4.7 && <5
     , bytestring
     , mtl
+    , proto-lens-runtime
     , text
     , word8
   default-language: Haskell2010
@@ -60,7 +70,10 @@ executable robusta-vm-exe
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , microlens
     , mtl
+    , proto-lens
+    , proto-lens-runtime
     , robusta-vm
     , text
     , word8
@@ -78,6 +91,7 @@ test-suite robusta-vm-test
       base >=4.7 && <5
     , bytestring
     , mtl
+    , proto-lens-runtime
     , robusta-vm
     , text
     , word8

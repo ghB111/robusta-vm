@@ -4,7 +4,7 @@ where
 import Function ( Function(..) )
 
 
-data MetaData = MetaData { unitName :: String, extras :: [(String, String)] }
+newtype MetaData = MetaData { extras :: [(String, String)] }
     deriving (Show, Read)
 
 -- by default everything is public

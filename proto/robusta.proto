@@ -1,0 +1,25 @@
+syntax="proto3";
+
+message CompilationUnit {
+    string name = 1;
+    MetaData metaData = 2;
+    repeated Function functions = 3;
+}
+
+message MetaData {
+    map<string, string> extras = 1;
+}
+
+message Function {
+    string name = 1;
+    repeated Type argTypes = 2;
+    Type returnType = 3;
+    bytes instructions = 4;
+}
+
+enum Type {
+    VOID_T = 0;
+    IntT = 1;
+    CharT = 2;
+    ArrayT = 3;
+}
