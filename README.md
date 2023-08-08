@@ -107,8 +107,8 @@ main = do
 This is not too amazing though
 
 ```bash
-ghci ./Main.hs
-main
+stack build
+stack exec robusta-vm-exe
 ```
 
 ## Rationale
