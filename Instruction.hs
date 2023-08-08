@@ -50,7 +50,7 @@ data FrameInstruction
     | IfNe     { gotoDest :: Int }
     | VarLoad    { idx :: Int }
     | VarStore   { idx :: Int }
-    | Ldc      { value :: Value }
+    | Ldc      { value :: Value } -- arrayV probably would not work here
     | Dup
     | Pop
     | Swap

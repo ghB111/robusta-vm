@@ -18,7 +18,7 @@ data Type
     | IntT
     | CharT
     | ArrayT
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 vType :: Value -> Type
 vType (VoidV _) = VoidT

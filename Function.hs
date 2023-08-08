@@ -10,6 +10,7 @@ module Function
     ) where
 
 import Control.Monad.State
+    ( StateT, MonadIO(liftIO), MonadState(put, get) )
 
 import Types ( Value(..), Type(..) )
 import Instruction
