@@ -1,4 +1,9 @@
-module Serialization ()
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+module Serialization (
+    compilationUnitToBytes,
+    compilationUnitFromBytes
+)
 where
 
 import qualified Data.ByteString as B
@@ -9,6 +14,69 @@ import Function
 import CompilationUnit
 import Types
 import Data.Maybe (fromJust, isNothing)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as ByteString
+
+-- import qualified Proto.Robusta as Proto
+-- import qualified Proto.Robusta_Fields as ProtoFields
+import Data.ProtoLens
+import qualified Proto.Robusta as Proto
+import qualified Proto.Robusta_Fields as Fields
+import Lens.Micro
+
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Data.Text (pack, unpack)
+import Data.Bifunctor (bimap)
+-- import qualified Proto.CompilationUnit as Proto
+
+
+compilationUnitToBytes :: CompilationUnit -> ByteString
+compilationUnitToBytes CompilationUnit{CompilationUnit.name, metaData, functions} = encodeMessage msg
+    where msg :: Proto.CompilationUnit
+          msg = defMessage
+                    & Fields.name .~ pack name
+                    & Fields.metaData .~ metaDataToMsg metaData
+                    & Fields.functions .~ map (functionToMsg stringTable) functions
+                    & Fields.stringTable .~ stringTable
+          stringTable = makeStringTable functions
+
+type StringTable = [ByteString]
+
+makeStringTable :: [Function] -> StringTable
+makeStringTable = foldl (\acc x -> merge acc $ getStrings x) []
+    where merge = undefined
+
+getStrings :: Function -> StringTable
+getStrings NativeFunction{} = []
+getStrings Function{instructions} = map []
+
+metaDataToMsg :: MetaData -> Proto.MetaData
+metaDataToMsg MetaData{extras} = defMessage
+    & Fields.extras .~ Map.fromList (map (bimap pack pack) extras)
+
+functionToMsg :: Function -> Proto.Function
+functionToMsg NativeFunction{} = error "Can not serialize native function"
+functionToMsg Function{Function.name, argTypes, returnType, instructions} = defMessage
+    & Fields.name .~ pack name
+    & Fields.argTypes .~ map typeToMsg argTypes
+    & Fields.returnType .~ typeToMsg returnType
+    & Fields.instructions .~ instructionsToBytes instructions
+
+typeToMsg :: Type -> Proto.Type
+typeToMsg VoidT = Proto.VOID_T
+typeToMsg IntT = Proto.IntT
+typeToMsg CharT = Proto.CharT
+typeToMsg ArrayT = Proto.ArrayT
+
+instructionsToBytes :: [Instruction] -> ByteString
+instructionsToBytes instructions = ByteString.pack $ concatMap instructionToBytes instructions
+
+instructionToBytes :: Instruction -> [Word8]
+instructionToBytes (SpecialInstructionC inst) = undefined
+
+compilationUnitFromBytes :: ByteString -> Maybe CompilationUnit
+compilationUnitFromBytes = undefined
 
 type InstructionCode = W8.Word8
 specialCodes :: [(SpecialInstruction, InstructionCode)]
@@ -25,7 +93,7 @@ heapCodes =
     , (ArrStore, 7) ]
 
 frameCodes :: [(FrameInstruction, InstructionCode)]
-frameCodes = 
+frameCodes =
     [ (Nop, 8)
     , (Add, 9)
     , (Sub, 10)

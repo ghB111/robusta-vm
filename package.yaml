@@ -45,6 +45,10 @@ ghc-options:
 - -Wredundant-constraints
 
 library:
+  dependencies:
+  - proto-lens
+  - microlens
+  - containers
   source-dirs: 
   - src
   exposed-modules:

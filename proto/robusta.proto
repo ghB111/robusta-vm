@@ -4,6 +4,7 @@ message CompilationUnit {
     string name = 1;
     MetaData metaData = 2;
     repeated Function functions = 3;
+    repeated bytes stringTable = 4;
 }
 
 message MetaData {
