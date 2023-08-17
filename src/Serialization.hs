@@ -12,16 +12,17 @@ import Instruction
 import Function
 import CompilationUnit
 import Types
-import Data.Maybe (fromJust, mapMaybe)
-import Data.ByteString (ByteString)
+import Data.Maybe (fromJust, mapMaybe, fromMaybe)
+import Data.ByteString (ByteString, null)
 import qualified Data.ByteString as ByteString
 
 import qualified Data.Int
 
-import Data.Char (ord)
+import Data.Char (ord, chr)
 import Data.List (elemIndex)
+import Control.Monad (msum)
 
-import Data.ProtoLens
+import Data.ProtoLens ( encodeMessage, decodeMessage, Message(defMessage) )
 import qualified Proto.Robusta as Proto
 import qualified Proto.Robusta_Fields as Fields
 import Lens.Micro
@@ -29,6 +30,8 @@ import Lens.Micro
 import qualified Data.Map as Map
 import Data.Text (pack, unpack)
 import Data.Bifunctor (bimap, Bifunctor (first))
+import Data.Map (toList)
+import Data.Tuple (swap)
 -- import qualified Proto.CompilationUnit as Proto
 
 
@@ -99,6 +102,13 @@ typeToMsg IntT = Proto.IntT
 typeToMsg CharT = Proto.CharT
 typeToMsg ArrayT = Proto.ArrayT
 
+decodeType :: Proto.Type -> Type
+decodeType Proto.VoidT = VoidT
+decodeType Proto.IntT = IntT
+decodeType Proto.CharT = CharT
+decodeType Proto.ArrayT = ArrayT
+decodeType (Proto.Type'Unrecognized v) = error $ "unrecoginzed type coded " ++ show v
+
 instructionsToBytes :: [Constant] -> [Instruction] -> ByteString
 instructionsToBytes constants instructions =
     ByteString.pack $ concatMap (instructionToBytes constants) instructions
@@ -128,8 +138,91 @@ getInstructionCode frameInst@(FrameInstructionC{}) = forceLookup (InstructionTyp
 forceLookup :: Eq a => a -> [(a, b)] -> b
 forceLookup key = fromJust . lookup key
 
-compilationUnitFromBytes :: ByteString -> Maybe CompilationUnit
-compilationUnitFromBytes = undefined
+compilationUnitFromBytes :: ByteString -> Either String CompilationUnit
+compilationUnitFromBytes byteString =
+    let decoded :: Either String Proto.CompilationUnit
+        decoded = decodeMessage byteString
+    in fmap compilationUnitFromMessage decoded
+
+compilationUnitFromMessage :: Proto.CompilationUnit -> CompilationUnit
+compilationUnitFromMessage protoUnit =
+    let unitName :: String
+        unitName = protoUnit ^. Fields.name . to unpack
+        metaData :: MetaData
+        metaData = protoUnit ^. Fields.metaData . to decodeMetaData
+        constants :: [Constant]
+        constants = protoUnit ^. Fields.constants & each %~ decodeConstant
+        functions = protoUnit ^. Fields.functions & each %~ decodeFunction constants
+    in CompilationUnit { CompilationUnit.name = unitName
+                       , metaData = metaData
+                       , functions = functions }
+
+decodeConstant :: Proto.Constant -> Constant
+decodeConstant protoConstant =
+    let maybeConstant = protoConstant ^. Fields.maybe'content
+        constantRef :: Proto.Constant'Content
+        constantRef = fromMaybe (error "Bad constant type") maybeConstant
+    in case constantRef of
+        Proto.Constant'ByteContent byteString -> ByteConstant byteString
+        Proto.Constant'VoidContent _ -> VoidConstant ()
+        Proto.Constant'IntContent integer -> IntConstant $ fromIntegral integer
+        Proto.Constant'CharContent charAsInt -> CharConstant . chr $ fromIntegral charAsInt
+        Proto.Constant'StringContent str -> StringConstant $ unpack str
+
+decodeFunction :: [Constant] -> Proto.Function -> Function
+decodeFunction constants protoFunction =
+    let instructionBytes = protoFunction ^. Fields.instructions . to (decodeInstructions constants)
+        name = protoFunction ^. Fields.name . to unpack
+        argTypes :: [Type]
+        argTypes = protoFunction ^. Fields.argTypes & each %~ decodeType
+        returnType = protoFunction ^. Fields.returnType . to decodeType
+    in Function{ Function.name = name
+                , argTypes = argTypes
+                , instructions = instructionBytes
+                , returnType = returnType }
+
+decodeInstructions :: [Constant] -> ByteString -> [Instruction]
+decodeInstructions constants byteString = decodeInstructions' (ByteString.unpack byteString) []
+    where decodeInstructions' ::  [W8.Word8] -> [Instruction] -> [Instruction]
+          decodeInstructions' bytes acc =
+            if ByteString.null byteString then reverse acc else
+                let (decoded, decodedLength) = decodeOne bytes
+                in decodeInstructions' (drop decodedLength bytes) (decoded : acc)
+          decodeOne :: [W8.Word8] -> (Instruction, Int)
+          decodeOne [] = error "can not decode empty bytestring"
+          decodeOne (code : otherBytes) =
+            let maybeNoRefInstruction = makeInstructionByCode code
+                refId = fromIntegral $ head otherBytes
+                referredConstant = constants !! refId
+            in case maybeNoRefInstruction of
+                (SpecialInstructionC (InvokeF _)) -> (SpecialInstructionC (InvokeF funcName), 2)
+                    where (StringConstant funcName) = referredConstant
+                (FrameInstructionC (Ldc _)) -> (FrameInstructionC (Ldc value), 2)
+                    where value = case referredConstant of
+                                    (StringConstant _) -> error "wtf"
+                                    (IntConstant int) -> IntV int
+                                    (ByteConstant byte) -> IntV $ fromIntegral $ head $ ByteString.unpack byte -- todo this is subject to change to raw data
+                                    (CharConstant charConstant) -> CharV charConstant
+                                    (VoidConstant _) -> VoidV ()
+                _ -> (maybeNoRefInstruction, 1)
+
+
+
+makeInstructionByCode :: W8.Word8 -> Instruction
+makeInstructionByCode code =
+    let specialTable = map swap specialCodes
+        heapTable = map swap heapCodes
+        frameTable = map swap frameCodes
+        maybeSpecial = SpecialInstructionC <$> lookup code specialTable
+        maybeHeap = HeapInstructionC <$> lookup code heapTable
+        maybeFrame = FrameInstructionC <$> lookup code frameTable
+    in fromMaybe (error "") $ msum [maybeSpecial, maybeHeap, maybeFrame]
+
+decodeMetaData :: Proto.MetaData -> MetaData
+decodeMetaData protoMetaData =
+    let extras :: [(String, String)]
+        extras = protoMetaData ^. Fields.extras . to toList . to (map $ bimap unpack unpack)
+    in MetaData extras
 
 type InstructionCode = W8.Word8
 specialCodes :: [(SpecialInstruction, InstructionCode)]

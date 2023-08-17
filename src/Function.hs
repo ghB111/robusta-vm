@@ -48,6 +48,18 @@ instance Show Function where
 instance Read Function where
     readsPrec _ = undefined
 
+instance Eq Function where
+    NativeFunction{name=nameL} == NativeFunction{name=nameR} = nameL == nameR
+    Function{ name=nameL
+            , argTypes=argTypesL
+            , returnType=returnTypeL
+            , instructions=instructionsL } == Function{ name=nameR
+                                                      , argTypes=argTypesR
+                                                      , returnType=returnTypeR
+                                                      , instructions=instructionsR } 
+                                                      = nameL == nameR && argTypesL == argTypesR && returnTypeL == returnTypeR && instructionsL == instructionsR
+
+
 exFunction = Function "examples.ex" [IntT] VoidT []
 exNativeFunction = NativeFunction "examples.nativeEx" $ do
     state <- get

@@ -46,5 +46,12 @@ main = do
     let compUnit = CU.CompilationUnit { CU.name = name, CU.metaData = meta, CU.functions = funcs }
     let bytes = compilationUnitToBytes compUnit
     putStrLn $ "Serialized size " ++ show (Data.ByteString.length bytes)
-    -- let (Just fromBytes) = compilationUnitFromBytes bytes
-    -- putStrLn $ "Got name: " ++ CU.name fromBytes
+    let fromBytesOrError = compilationUnitFromBytes bytes
+    either (\err -> do
+        putStrLn $ "Error " ++ err
+        ) (\fromBytes -> do
+        putStrLn $ "Got name: " ++ CU.name fromBytes
+        let ok = fromBytes == compUnit
+        let msg = if ok then "OK" else "FAIL"
+        putStrLn $ "Result: " ++ msg
+            ) fromBytesOrError
