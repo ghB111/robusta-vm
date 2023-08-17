@@ -6,14 +6,13 @@ module Serialization (
 )
 where
 
-import qualified Data.ByteString as B
 import qualified Data.Word8 as W8
 
 import Instruction
 import Function
 import CompilationUnit
 import Types
-import Data.Maybe (fromJust, isNothing, isJust)
+import Data.Maybe (fromJust, mapMaybe)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 
@@ -27,10 +26,9 @@ import qualified Proto.Robusta as Proto
 import qualified Proto.Robusta_Fields as Fields
 import Lens.Micro
 
-import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text (pack, unpack)
-import Data.Bifunctor (bimap)
+import Data.Bifunctor (bimap, Bifunctor (first))
 -- import qualified Proto.CompilationUnit as Proto
 
 
@@ -65,20 +63,20 @@ constantToMsg (StringConstant sc) = defMessage & Fields.stringContent .~ pack sc
 makeStringTable :: [Function] -> [Constant]
 makeStringTable = foldl (\acc x -> merge acc $ getConstants x) []
     where merge :: [Constant] -> [Constant] -> [Constant]
-          merge l r = l ++ filter (\x -> x `notElem` l) r
+          merge l r = l ++ filter (`notElem` l) r
 
 getConstants :: Function -> [Constant]
 getConstants NativeFunction{} = []
-getConstants Function{instructions} = map fromJust $ filter isJust $ map retrieveInstructionString instructions
+getConstants Function{instructions} = mapMaybe retrieveInstructionString instructions
 
 valueToConstant :: Value -> Constant
 valueToConstant (VoidV ()) = VoidConstant ()
 valueToConstant (IntV i) = IntConstant i
 valueToConstant (CharV c) = CharConstant c
-valueToConstant (ArrayV i) = error "Array reference can not be constant"
+valueToConstant (ArrayV _) = error "Array reference can not be constant"
 
 retrieveInstructionString :: Instruction -> Maybe Constant
-retrieveInstructionString (SpecialInstructionC (InvokeF methodName)) = 
+retrieveInstructionString (SpecialInstructionC (InvokeF methodName)) =
     Just $ StringConstant methodName
 retrieveInstructionString (FrameInstructionC (Ldc constantValue)) = Just $ valueToConstant constantValue
 retrieveInstructionString _ = Nothing
@@ -106,7 +104,7 @@ instructionsToBytes constants instructions =
     ByteString.pack $ concatMap (instructionToBytes constants) instructions
 
 instructionToBytes :: [Constant] -> Instruction -> [W8.Word8]
-instructionToBytes constants instruction = case instruction of 
+instructionToBytes constants instruction = case instruction of
     (SpecialInstructionC (InvokeF methodName)) -> byConstantLookup $ StringConstant methodName
     (FrameInstructionC (Ldc constant)) -> byConstantLookup $ valueToConstant constant
     _ -> [ getInstructionCode instruction ]
@@ -122,16 +120,13 @@ instance Eq InstructionType where
     (InstructionType l) == (InstructionType r) = l == r
 
 getInstructionCode :: Instruction -> InstructionCode
-getInstructionCode specInst@(SpecialInstructionC inst) = fromIntegral $ forceLookup (InstructionType specInst) $ map (bimap (InstructionType . SpecialInstructionC) id) specialCodes
-getInstructionCode heapInst@(HeapInstructionC inst) = fromIntegral $ forceLookup (InstructionType heapInst) $ map (bimap (InstructionType . HeapInstructionC) id) heapCodes
-getInstructionCode frameInst@(FrameInstructionC inst) = fromIntegral $ forceLookup (InstructionType frameInst) $ map (bimap (InstructionType . FrameInstructionC) id) frameCodes
+getInstructionCode specInst@(SpecialInstructionC{}) = forceLookup (InstructionType specInst) $ map (first (InstructionType . SpecialInstructionC)) specialCodes
+getInstructionCode heapInst@(HeapInstructionC{}) = forceLookup (InstructionType heapInst) $ map (first (InstructionType . HeapInstructionC)) heapCodes
+getInstructionCode frameInst@(FrameInstructionC{}) = forceLookup (InstructionType frameInst) $ map (first (InstructionType . FrameInstructionC)) frameCodes
 
 
 forceLookup :: Eq a => a -> [(a, b)] -> b
-forceLookup key = fromJust . (lookup key)
-
-forceElemIndex :: Eq a => a -> [a] -> Int
-forceElemIndex key = fromJust . (elemIndex key)
+forceLookup key = fromJust . lookup key
 
 compilationUnitFromBytes :: ByteString -> Maybe CompilationUnit
 compilationUnitFromBytes = undefined
@@ -179,54 +174,3 @@ frameCodes =
     , (Pop, 32)
     , (Swap, 33)
     ]
-
-
-
-
--- toBytes (SpecialInstructionC SpecialInstruction)
--- toBytes (FrameInstructionC FrameInstruction)
--- toBytes (HeapInstructionC HeapInstruction)
-
-
-
--- data SpecialInstruction
---     = AReturn
---     | Return
---     | InvokeF  { functionName :: String }
---     deriving (Show, Read)
-
--- data HeapInstruction
---     = ArrLen
---     | ArrNew
---     | ArrLoad
---     | ArrStore
---     deriving (Show, Read)
-
--- data FrameInstruction
---     = Nop
---     | Add
---     | Sub
---     | Mul
---     | Div
---     | Neg
---     | Const0
---     | Const1
---     | Goto     { gotoDest :: Int }
---     | IfCmpEq  { gotoDest :: Int }
---     | IfCmpGe  { gotoDest :: Int }
---     | IfCmpGt  { gotoDest :: Int }
---     | IfCmpLe  { gotoDest :: Int }
---     | IfCmpLt  { gotoDest :: Int }
---     | IfCmpNe  { gotoDest :: Int }
---     | IfEq     { gotoDest :: Int }
---     | IfGt     { gotoDest :: Int }
---     | IfLe     { gotoDest :: Int }
---     | IfLt     { gotoDest :: Int }
---     | IfNe     { gotoDest :: Int }
---     | VarLoad    { idx :: Int }
---     | VarStore   { idx :: Int }
---     | Ldc      { value :: Value }
---     | Dup
---     | Pop
---     | Swap
---     deriving (Show, Read)
