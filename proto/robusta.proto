@@ -4,8 +4,29 @@ message CompilationUnit {
     string name = 1;
     MetaData metaData = 2;
     repeated Function functions = 3;
-    repeated bytes stringTable = 4;
+    repeated Constant constants = 4;
 }
+
+message Constant {
+    oneof content {
+        bytes byteContent = 1;
+        string stringContent = 2;
+        int32 charContent = 3;
+        int32 intContent = 4;
+        Void voidContent = 5;
+    }
+}
+
+message Void { }
+
+/*
+enum ConstantType {
+    Bytes = 0;
+    String = 1;
+    Char = 2;
+    Int = 3;
+}
+*/
 
 message MetaData {
     map<string, string> extras = 1;
@@ -19,8 +40,9 @@ message Function {
 }
 
 enum Type {
-    VOID_T = 0;
+    VoidT = 0;
     IntT = 1;
     CharT = 2;
     ArrayT = 3;
 }
+

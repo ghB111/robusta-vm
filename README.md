@@ -108,7 +108,7 @@ This is not too amazing though
 
 ```bash
 stack build
-stack exec robusta-vm-exe
+stack run
 ```
 
 ## Rationale

@@ -13,12 +13,15 @@ import Instruction
 import Function
 import CompilationUnit
 import Types
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (fromJust, isNothing, isJust)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 
--- import qualified Proto.Robusta as Proto
--- import qualified Proto.Robusta_Fields as ProtoFields
+import qualified Data.Int
+
+import Data.Char (ord)
+import Data.List (elemIndex)
+
 import Data.ProtoLens
 import qualified Proto.Robusta as Proto
 import qualified Proto.Robusta_Fields as Fields
@@ -37,43 +40,98 @@ compilationUnitToBytes CompilationUnit{CompilationUnit.name, metaData, functions
           msg = defMessage
                     & Fields.name .~ pack name
                     & Fields.metaData .~ metaDataToMsg metaData
-                    & Fields.functions .~ map (functionToMsg stringTable) functions
-                    & Fields.stringTable .~ stringTable
-          stringTable = makeStringTable functions
+                    & Fields.functions .~ map (functionToMsg constants) nonNativeFunctions
+                    & Fields.constants .~ map constantToMsg constants
+          constants = makeStringTable functions
+          nonNativeFunctions = filter isNotNative functions -- todo subject to change to support user native funcs?
+          isNotNative (NativeFunction{}) = False
+          isNotNative _ = True
 
-type StringTable = [ByteString]
+data Constant = ByteConstant ByteString
+              | StringConstant String
+              | CharConstant Char
+              | IntConstant Int
+              | VoidConstant ()
+              deriving (Eq, Show)
 
-makeStringTable :: [Function] -> StringTable
-makeStringTable = foldl (\acc x -> merge acc $ getStrings x) []
-    where merge = undefined
+constantToMsg :: Constant -> Proto.Constant
+constantToMsg (ByteConstant byteString) = defMessage & Fields.byteContent .~ byteString
+constantToMsg (VoidConstant ()) = defMessage & Fields.voidContent .~ defMessage
+constantToMsg (IntConstant i) = defMessage & Fields.intContent .~ fromIntegral i
+constantToMsg (CharConstant c) = defMessage & Fields.charContent .~ (fromIntegral $ ord c :: Data.Int.Int32)
+constantToMsg (StringConstant sc) = defMessage & Fields.stringContent .~ pack sc
 
-getStrings :: Function -> StringTable
-getStrings NativeFunction{} = []
-getStrings Function{instructions} = map []
+
+makeStringTable :: [Function] -> [Constant]
+makeStringTable = foldl (\acc x -> merge acc $ getConstants x) []
+    where merge :: [Constant] -> [Constant] -> [Constant]
+          merge l r = l ++ filter (\x -> x `notElem` l) r
+
+getConstants :: Function -> [Constant]
+getConstants NativeFunction{} = []
+getConstants Function{instructions} = map fromJust $ filter isJust $ map retrieveInstructionString instructions
+
+valueToConstant :: Value -> Constant
+valueToConstant (VoidV ()) = VoidConstant ()
+valueToConstant (IntV i) = IntConstant i
+valueToConstant (CharV c) = CharConstant c
+valueToConstant (ArrayV i) = error "Array reference can not be constant"
+
+retrieveInstructionString :: Instruction -> Maybe Constant
+retrieveInstructionString (SpecialInstructionC (InvokeF methodName)) = 
+    Just $ StringConstant methodName
+retrieveInstructionString (FrameInstructionC (Ldc constantValue)) = Just $ valueToConstant constantValue
+retrieveInstructionString _ = Nothing
 
 metaDataToMsg :: MetaData -> Proto.MetaData
 metaDataToMsg MetaData{extras} = defMessage
     & Fields.extras .~ Map.fromList (map (bimap pack pack) extras)
 
-functionToMsg :: Function -> Proto.Function
-functionToMsg NativeFunction{} = error "Can not serialize native function"
-functionToMsg Function{Function.name, argTypes, returnType, instructions} = defMessage
+functionToMsg :: [Constant] -> Function -> Proto.Function
+functionToMsg _ NativeFunction{} = error "Can not serialize native function"
+functionToMsg constants Function{Function.name, argTypes, returnType, instructions} = defMessage
     & Fields.name .~ pack name
     & Fields.argTypes .~ map typeToMsg argTypes
     & Fields.returnType .~ typeToMsg returnType
-    & Fields.instructions .~ instructionsToBytes instructions
+    & Fields.instructions .~ instructionsToBytes constants instructions
 
 typeToMsg :: Type -> Proto.Type
-typeToMsg VoidT = Proto.VOID_T
+typeToMsg VoidT = Proto.VoidT
 typeToMsg IntT = Proto.IntT
 typeToMsg CharT = Proto.CharT
 typeToMsg ArrayT = Proto.ArrayT
 
-instructionsToBytes :: [Instruction] -> ByteString
-instructionsToBytes instructions = ByteString.pack $ concatMap instructionToBytes instructions
+instructionsToBytes :: [Constant] -> [Instruction] -> ByteString
+instructionsToBytes constants instructions =
+    ByteString.pack $ concatMap (instructionToBytes constants) instructions
 
-instructionToBytes :: Instruction -> [Word8]
-instructionToBytes (SpecialInstructionC inst) = undefined
+instructionToBytes :: [Constant] -> Instruction -> [W8.Word8]
+instructionToBytes constants instruction = case instruction of 
+    (SpecialInstructionC (InvokeF methodName)) -> byConstantLookup $ StringConstant methodName
+    (FrameInstructionC (Ldc constant)) -> byConstantLookup $ valueToConstant constant
+    _ -> [ getInstructionCode instruction ]
+    where byConstantLookup constant = [ getInstructionCode instruction, fromIntegral constIdx ]
+            where constIdx = fromJust $ elemIndex constant constants
+
+-- equality is reference-agnostic for this type
+newtype InstructionType = InstructionType { instruction :: Instruction }
+
+instance Eq InstructionType where
+    (InstructionType (SpecialInstructionC (InvokeF _))) == (InstructionType (SpecialInstructionC (InvokeF _))) = True
+    (InstructionType (FrameInstructionC (Ldc _))) == (InstructionType (FrameInstructionC (Ldc _))) = True
+    (InstructionType l) == (InstructionType r) = l == r
+
+getInstructionCode :: Instruction -> InstructionCode
+getInstructionCode specInst@(SpecialInstructionC inst) = fromIntegral $ forceLookup (InstructionType specInst) $ map (bimap (InstructionType . SpecialInstructionC) id) specialCodes
+getInstructionCode heapInst@(HeapInstructionC inst) = fromIntegral $ forceLookup (InstructionType heapInst) $ map (bimap (InstructionType . HeapInstructionC) id) heapCodes
+getInstructionCode frameInst@(FrameInstructionC inst) = fromIntegral $ forceLookup (InstructionType frameInst) $ map (bimap (InstructionType . FrameInstructionC) id) frameCodes
+
+
+forceLookup :: Eq a => a -> [(a, b)] -> b
+forceLookup key = fromJust . (lookup key)
+
+forceElemIndex :: Eq a => a -> [a] -> Int
+forceElemIndex key = fromJust . (elemIndex key)
 
 compilationUnitFromBytes :: ByteString -> Maybe CompilationUnit
 compilationUnitFromBytes = undefined

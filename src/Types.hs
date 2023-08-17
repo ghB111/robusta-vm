@@ -11,7 +11,7 @@ data Value
     | IntV Int
     | CharV Char
     | ArrayV HeapRef
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 data Type
     = VoidT
