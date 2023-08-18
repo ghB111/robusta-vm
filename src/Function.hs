@@ -58,9 +58,13 @@ instance Eq Function where
                                                       , returnType=returnTypeR
                                                       , instructions=instructionsR } 
                                                       = nameL == nameR && argTypesL == argTypesR && returnTypeL == returnTypeR && instructionsL == instructionsR
+    _ == _ = False
 
 
+exFunction :: Function
 exFunction = Function "examples.ex" [IntT] VoidT []
+
+exNativeFunction :: Function
 exNativeFunction = NativeFunction "examples.nativeEx" $ do
     state <- get
     liftIO $ putStrLn "We now have side-effects"

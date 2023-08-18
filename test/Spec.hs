@@ -41,9 +41,12 @@ sumTwoIntegers = Function { name = "main"
 main :: IO ()
 main = do
     let funcs = helloWorld : stdlib
-    let name = "mainModule"
+    let moduleName = "mainModule"
     let meta = CU.MetaData { CU.extras = [] }
-    let compUnit = CU.CompilationUnit { CU.name = name, CU.metaData = meta, CU.functions = funcs }
+    let compUnit = CU.CompilationUnit { CU.name = moduleName, CU.metaData = meta, CU.functions = funcs }
+    print compUnit
+    let shouldBeOk = compUnit == compUnit
+    print shouldBeOk
     let bytes = compilationUnitToBytes compUnit
     putStrLn $ "Serialized size " ++ show (Data.ByteString.length bytes)
     let fromBytesOrError = compilationUnitFromBytes bytes
@@ -51,7 +54,13 @@ main = do
         putStrLn $ "Error " ++ err
         ) (\fromBytes -> do
         putStrLn $ "Got name: " ++ CU.name fromBytes
+        print fromBytes
+        let onlyFunc = head (CU.functions fromBytes)
+        print onlyFunc
+        let insns = instructions onlyFunc
+        print insns
         let ok = fromBytes == compUnit
+        -- let ok = True
         let msg = if ok then "OK" else "FAIL"
         putStrLn $ "Result: " ++ msg
             ) fromBytesOrError

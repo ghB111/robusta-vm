@@ -185,7 +185,7 @@ decodeInstructions :: [Constant] -> ByteString -> [Instruction]
 decodeInstructions constants byteString = decodeInstructions' (ByteString.unpack byteString) []
     where decodeInstructions' ::  [W8.Word8] -> [Instruction] -> [Instruction]
           decodeInstructions' bytes acc =
-            if ByteString.null byteString then reverse acc else
+            if Prelude.null bytes then reverse acc else
                 let (decoded, decodedLength) = decodeOne bytes
                 in decodeInstructions' (drop decodedLength bytes) (decoded : acc)
           decodeOne :: [W8.Word8] -> (Instruction, Int)
