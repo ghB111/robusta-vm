@@ -44,7 +44,7 @@ sumTwoIntegers = Function { name = "main"
 
 serializationSpec :: Spec
 serializationSpec = describe "Compilation unit (de)serialization" $ do
-    let funcs = helloWorld : stdlib
+    let funcs = [ helloWorld ]
     let moduleName = "mainModule"
     let meta = CU.MetaData { CU.extras = [] }
     let compUnit = CU.CompilationUnit { CU.name = moduleName, CU.metaData = meta, CU.functions = funcs }
