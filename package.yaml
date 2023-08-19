@@ -92,3 +92,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - robusta-vm
+    - hspec

@@ -9,7 +9,11 @@ import Dsl
 import Serialization
 import qualified CompilationUnit as CU
 
+import Data.Either (fromRight, isRight)
+
 import Data.ByteString (length)
+
+import Test.Hspec
 
 helloWorld :: Function
 helloWorld = Function { name = "main"
@@ -38,29 +42,23 @@ sumTwoIntegers = Function { name = "main"
                              , add
                              , aRet ]
 
-main :: IO ()
-main = do
+serializationSpec :: Spec
+serializationSpec = describe "Compilation unit (de)serialization" $ do
     let funcs = helloWorld : stdlib
     let moduleName = "mainModule"
     let meta = CU.MetaData { CU.extras = [] }
     let compUnit = CU.CompilationUnit { CU.name = moduleName, CU.metaData = meta, CU.functions = funcs }
-    print compUnit
-    let shouldBeOk = compUnit == compUnit
-    print shouldBeOk
-    let bytes = compilationUnitToBytes compUnit
-    putStrLn $ "Serialized size " ++ show (Data.ByteString.length bytes)
-    let fromBytesOrError = compilationUnitFromBytes bytes
-    either (\err -> do
-        putStrLn $ "Error " ++ err
-        ) (\fromBytes -> do
-        putStrLn $ "Got name: " ++ CU.name fromBytes
-        print fromBytes
-        let onlyFunc = head (CU.functions fromBytes)
-        print onlyFunc
-        let insns = instructions onlyFunc
-        print insns
-        let ok = fromBytes == compUnit
-        -- let ok = True
-        let msg = if ok then "OK" else "FAIL"
-        putStrLn $ "Result: " ++ msg
-            ) fromBytesOrError
+
+    it "has adequate equality" $ do
+        (compUnit == compUnit) `shouldBe` True -- todo wtf
+
+    it "x == (deserialize . serialize) x" $ do
+        let bytes = compilationUnitToBytes compUnit
+        let fromBytesOrError = compilationUnitFromBytes bytes
+        fromBytesOrError `shouldSatisfy` isRight
+        let fromBytes = fromRight (error "not right") fromBytesOrError
+        compUnit `shouldBe` fromBytes
+
+main :: IO ()
+main = do
+    mapM_ hspec [serializationSpec]
