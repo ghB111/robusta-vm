@@ -1,0 +1,95 @@
+name:                robusta-vm
+version:             0.1.0.0
+github:              "ghb111/robusta-vm"
+license:             BSD3
+author:              "Roman Brek"
+# maintainer:          "example@example.com"
+copyright:           "2023 Roman Brek"
+
+custom-setup:
+  dependencies:
+    - base
+    - Cabal
+    - proto-lens-setup
+
+extra-source-files:
+- README.md
+- proto/**/*.proto
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         A stack-based virtual machine written in haskell
+
+dependencies:
+- base >= 4.7 && < 5
+- mtl
+- text
+- word8
+- bytestring
+- proto-lens-runtime
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-export-lists
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  dependencies:
+  - proto-lens
+  - microlens
+  - containers
+  source-dirs: 
+  - src
+  exposed-modules:
+  - Proto.Robusta
+  - Proto.Robusta_Fields
+  - CompilationUnit
+  - Dsl
+  - Example
+  - Execution
+  - Function
+  - Heap
+  - HeapExample
+  - Instruction
+  - Robusta
+  - Serialization
+  - Stdlib
+  - Types
+  - Vm
+
+
+executables:
+  robusta-vm-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - robusta-vm
+    - microlens
+    - proto-lens
+
+tests:
+  robusta-vm-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - robusta-vm
+    - hspec

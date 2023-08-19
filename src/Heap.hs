@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Heap ( Heap
             , HeapKey
             , makeEmptyHeap
@@ -18,7 +20,7 @@ type HeapKey = Integer
 {-
    Heap is a mapping of ids (think memory address) to actual values
 -}
-newtype Heap = Heap { mapping  :: [(HeapKey, [Value])] }
+newtype Heap = Heap { mapping :: [(HeapKey, [Value])] }
    deriving (Show, Read)
 
 nextId :: Heap -> HeapKey

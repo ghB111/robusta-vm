@@ -12,20 +12,20 @@ data Instruction
     = SpecialInstructionC SpecialInstruction
     | FrameInstructionC FrameInstruction
     | HeapInstructionC HeapInstruction
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 data SpecialInstruction
     = AReturn
     | Return
     | InvokeF  { functionName :: String }
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 data HeapInstruction
     = ArrLen
     | ArrNew
     | ArrLoad
     | ArrStore
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 data FrameInstruction
     = Nop
@@ -50,8 +50,8 @@ data FrameInstruction
     | IfNe     { gotoDest :: Int }
     | VarLoad    { idx :: Int }
     | VarStore   { idx :: Int }
-    | Ldc      { value :: Value }
+    | Ldc      { value :: Value } -- arrayV probably would not work here
     | Dup
     | Pop
     | Swap
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)

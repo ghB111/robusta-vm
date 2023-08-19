@@ -1,0 +1,39 @@
+syntax="proto3";
+
+message CompilationUnit {
+    string name = 1;
+    MetaData metaData = 2;
+    repeated Function functions = 3;
+    repeated Constant constants = 4;
+}
+
+message Constant {
+    oneof content {
+        bytes byteContent = 1;
+        string stringContent = 2;
+        int32 charContent = 3;
+        int32 intContent = 4;
+        Void voidContent = 5;
+    }
+}
+
+message Void { }
+
+message MetaData {
+    map<string, string> extras = 1;
+}
+
+message Function {
+    string name = 1;
+    repeated Type argTypes = 2;
+    Type returnType = 3;
+    bytes instructions = 4;
+}
+
+enum Type {
+    VoidT = 0;
+    IntT = 1;
+    CharT = 2;
+    ArrayT = 3;
+}
+

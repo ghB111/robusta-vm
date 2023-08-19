@@ -11,14 +11,14 @@ data Value
     | IntV Int
     | CharV Char
     | ArrayV HeapRef
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 data Type
     = VoidT
     | IntT
     | CharT
     | ArrayT
-    deriving (Show, Read)
+    deriving (Show, Read, Eq)
 
 vType :: Value -> Type
 vType (VoidV _) = VoidT

@@ -10,6 +10,7 @@ module Function
     ) where
 
 import Control.Monad.State
+    ( StateT, MonadIO(liftIO), MonadState(put, get) )
 
 import Types ( Value(..), Type(..) )
 import Instruction
@@ -47,7 +48,23 @@ instance Show Function where
 instance Read Function where
     readsPrec _ = undefined
 
+instance Eq Function where
+    NativeFunction{name=nameL} == NativeFunction{name=nameR} = nameL == nameR
+    Function{ name=nameL
+            , argTypes=argTypesL
+            , returnType=returnTypeL
+            , instructions=instructionsL } == Function{ name=nameR
+                                                      , argTypes=argTypesR
+                                                      , returnType=returnTypeR
+                                                      , instructions=instructionsR } 
+                                                      = nameL == nameR && argTypesL == argTypesR && returnTypeL == returnTypeR && instructionsL == instructionsR
+    _ == _ = False
+
+
+exFunction :: Function
 exFunction = Function "examples.ex" [IntT] VoidT []
+
+exNativeFunction :: Function
 exNativeFunction = NativeFunction "examples.nativeEx" $ do
     state <- get
     liftIO $ putStrLn "We now have side-effects"
